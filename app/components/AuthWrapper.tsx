@@ -38,7 +38,7 @@ export default function AuthWrapper({
 
     // ถ้าอยู่หน้า login แต่มี token
     if (!requireAuth && hasToken) {
-      router.push("/iStock-dashboard");
+      router.push("/km-dashboard");
       return;
     }
 

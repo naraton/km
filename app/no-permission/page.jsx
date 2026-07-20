@@ -28,7 +28,7 @@ export default function NoPermission() {
 
         {/* Footer note */}
         <p className="text-xs text-gray-400 mt-6">
-          iStock · Thanyarak Chaingmai Hospital
+          KM · Thanyarak Chaingmai Hospital
         </p>
       </div>
     </div>

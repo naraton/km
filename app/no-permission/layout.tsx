@@ -7,8 +7,8 @@ const kanit = Kanit({
 });
 
 export const metadata = {
-  title: "iStock",
-  description: "ระบบจัดการสต๊อกวัสดุและการเบิกใช้ภายใน IPD",
+  title: "KM",
+  description: "ระบบจัดการองค์ความรู้ภายในองค์กร",
 };
 
 export default function RootLayout({
