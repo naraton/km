@@ -37,7 +37,7 @@ export default function LayoutDrawer({
                   strokeWidth={2.5}
                 />
               </label>
-              <span className="text-sm font-medium rounded-full p-2 bg-violet-800/70 text-white shadow-sm border-violet-900/20 shadow-violet-500/20">
+              <span className="text-sm font-semibold px-2.5 py-1 rounded-full bg-violet-700 text-white shadow-xs border border-violet-600/30">
                 TCH KM Hub
               </span>
             </div>
@@ -63,7 +63,7 @@ export default function LayoutDrawer({
           </div>
 
           {/* ✅ Desktop Header */}
-          <div className="hidden lg:flex items-center justify-between w-full px-6">
+          <div className="hidden lg:flex items-center justify-between w-full px-2">
             {/* ฝั่งซ้าย: Logo + ชื่อระบบ */}
             <div className="flex items-center gap-2">
               <div className="relative flex items-center justify-center bg-white rounded-xl">
@@ -80,7 +80,7 @@ export default function LayoutDrawer({
                 <span className="text-sky-950 font-black text-xl tracking-tight">
                   ศูนย์รวมองค์ความรู้ ธัญญารักษ์เชียงใหม่
                 </span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-700 text-white shadow-xs border border-violet-600/30">
+                <span className="text-sm font-semibold px-2.5 py-1 rounded-full bg-violet-700 text-white shadow-xs border border-violet-600/30">
                   TCH KM Hub
                 </span>
               </div>
