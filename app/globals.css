@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, fantasy;
+}
+
+/* กำหนดสี theme เอง */
+@plugin "daisyui/theme" {
+  name: "fantasy";
+  default: true;
+
+  /* สีหลัก */
+  --color-primary: #0c4a6e;
+}
+
+[data-theme="fantasy"] .menu li>*:where(.active, .menu-active) {
+  background-color: #012970 !important;
+  color: white !important;
+}
+
+@theme {
+  --font-sans: 'Kanit', var(--font-sans), sans-serif;
+}
+
+/* Remove default focus outline from Recharts */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-responsive-container {
+  outline: none !important;
+}
