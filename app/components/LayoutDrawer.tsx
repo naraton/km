@@ -25,21 +25,27 @@ export default function LayoutDrawer({
           style={{ boxShadow: "0 4px 30px rgba(0, 0, 0, 0.03)" }}
         >
           {/* ✅ Mobile Header */}
-          <div className="flex items-center justify-between p-2 z-15 lg:hidden w-full gap-2">
+          <div className="flex items-center justify-between z-15 lg:hidden w-full gap-1">
             <div className="flex items-center shrink-0">
-              <label
-                htmlFor="my-drawer"
-                aria-label="open sidebar"
-                className="btn btn-ghost btn-square rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <HiOutlineBars3
-                  className="w-6 h-6 text-sky-900"
-                  strokeWidth={2.5}
+              <div className="relative flex-shrink-0 bg-white rounded-2xl p-1 shadow-lg border border-slate-300">
+                <Image 
+                  src={logo} 
+                  alt="TCH KM Logo" 
+                  width={40} 
+                  height={40} 
+                  className="object-contain"
                 />
-              </label>
-              <span className="text-sm font-semibold px-2.5 py-1 rounded-full bg-violet-700 text-white shadow-xs border border-violet-600/30">
-                TCH KM Hub
-              </span>
+              </div>
+
+              {/* ส่วนแสดงชื่อองค์กร */}
+              <div className="flex flex-col justify-center leading-tight">
+                <span className="text-xl sm:ps-1 ps-1 font-black tracking-tight text-violet-700">
+                  TCH : KM
+                </span>
+                <span className="text-sm sm:ps-1 ps-1 font-medium text-slate-600 mt-0.5">
+                  โรงพยาบาลธัญญารักษ์เชียงใหม่
+                </span>
+              </div>
             </div>
 
             {/* ช่องค้นหา + ปุ่มค้นหา (Mobile) */}
@@ -63,25 +69,26 @@ export default function LayoutDrawer({
           </div>
 
           {/* ✅ Desktop Header */}
-          <div className="hidden lg:flex items-center justify-between w-full px-2">
+          <div className="hidden lg:flex items-center justify-between w-full px-1">
             {/* ฝั่งซ้าย: Logo + ชื่อระบบ */}
             <div className="flex items-center gap-2">
-              <div className="relative flex items-center justify-center bg-white rounded-xl">
+              <div className="relative flex-shrink-0 bg-white rounded-2xl p-1 border border-slate-300 shadow-lg">
                 <Image 
                   src={logo} 
                   alt="TCH KM Logo" 
-                  width={30} 
-                  height={30} 
+                  width={45} 
+                  height={45} 
                   className="object-contain"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sky-950 font-black text-xl tracking-tight">
-                  ศูนย์รวมองค์ความรู้ ธัญญารักษ์เชียงใหม่
-                </span>
-                <span className="text-sm font-semibold px-2.5 py-1 rounded-full bg-violet-700 text-white shadow-xs border border-violet-600/30">
-                  TCH KM Hub
+              {/* ส่วนแสดงชื่อองค์กร */}
+              <div className="flex flex-col justify-center leading-tight">
+                <span className="text-xl font-black tracking-tight text-violet-700">
+                  ศูนย์รวมองค์ความรู้ (Knowledge Management : KM)
+                </span> 
+                <span className="text-base font-medium text-slate-600 mt-0.5">
+                  โรงพยาบาลธัญญารักษ์เชียงใหม่
                 </span>
               </div>
             </div>
