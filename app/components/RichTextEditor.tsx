@@ -197,6 +197,7 @@ export default function RichTextEditor({
         >
           <FaBold />
         </button>
+        
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -207,6 +208,7 @@ export default function RichTextEditor({
         >
           <FaItalic />
         </button>
+        
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleStrike().run()}
@@ -217,6 +219,7 @@ export default function RichTextEditor({
         >
           <FaStrikethrough />
         </button>
+        
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleCode().run()}
@@ -252,6 +255,7 @@ export default function RichTextEditor({
         >
           <FaLink />
         </button>
+
         <button
           type="button"
           onClick={addImage}
@@ -271,6 +275,7 @@ export default function RichTextEditor({
           >
             <FaSmile />
           </button>
+
           {showEmojiPicker && (
             <div className="absolute top-full left-0 mt-2 z-50 shadow-xl rounded-2xl overflow-hidden border border-slate-200">
               <Picker data={data} onEmojiSelect={addEmoji} theme="light" previewPosition="none" skinTonePosition="none" />
@@ -291,6 +296,7 @@ export default function RichTextEditor({
         >
           <FaListUl />
         </button>
+
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
@@ -301,6 +307,7 @@ export default function RichTextEditor({
         >
           <FaListOl />
         </button>
+
         <button
           type="button"
           onClick={() => editor.chain().focus().setTextAlign("left").run()}
@@ -311,6 +318,7 @@ export default function RichTextEditor({
         >
           <FaAlignLeft />
         </button>
+
         <button
           type="button"
           onClick={() => editor.chain().focus().setTextAlign("center").run()}
@@ -321,6 +329,7 @@ export default function RichTextEditor({
         >
           <FaAlignCenter />
         </button>
+
         <button
           type="button"
           onClick={() => editor.chain().focus().setTextAlign("right").run()}
@@ -331,6 +340,7 @@ export default function RichTextEditor({
         >
           <FaAlignRight />
         </button>
+
         <button
           type="button"
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
@@ -352,6 +362,7 @@ export default function RichTextEditor({
         >
           <FaUndo />
         </button>
+        
         <button
           type="button"
           onClick={() => editor.chain().focus().redo().run()}

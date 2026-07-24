@@ -147,6 +147,81 @@ export default function ArticleForm({
     setFormData((prev) => ({ ...prev, attachment: "" }));
   };
 
+  //get data
+  const [categoriesData, setCategoriesData] = useState<any>(null);
+  const [missionData, setMissionData] = useState<any>(null);
+
+  const getData = async () => {
+    try {
+      const resCategories = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/getCategories`);
+      const resMission = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Depart`);
+
+      const categoryData = await resCategories.json();
+      const missionDataJson = await resMission.json();
+
+      setCategoriesData(categoryData);
+      setMissionData(missionDataJson);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+
+  //ดึงกลุ่มงาน เมื่อ formData.mission (ภารกิจ) เปลี่ยน
+  const [workGroupsData, setWorkGroupsData] = useState<any>(null);
+  
+  useEffect(() => {
+    const getWorkGroups = async () => {
+      if (!formData.mission) {
+        setWorkGroupsData(null);
+        return;
+      }
+
+      try {
+        // ส่ง query parameter HR_DEPART_ID ไปยัง API
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/Department?departId=${formData.mission}`
+        );
+        const data = await res.json();
+        setWorkGroupsData(data);
+      } catch (error) {
+        console.error("Error fetching work groups:", error);
+        setWorkGroupsData(null);
+      }
+    };
+
+    getWorkGroups();
+  }, [formData.mission]);
+
+  //ดึงงาน เมื่อ formData.workGroup (กลุ่มงาน) เปลี่ยน
+  const [jobsData, setJobsData] = useState<any>(null);
+
+  useEffect(() => {
+    const getJobs = async () => {
+      if (!formData.workGroup) {
+        setJobsData(null);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/DepartmentSub?departMentId=${formData.workGroup}`
+        );
+        const data = await res.json();
+        setJobsData(data);
+      } catch (error) {
+        console.error("Error fetching jobs:", error);
+        setJobsData(null);
+      }
+    };
+
+    getJobs();
+  }, [formData.workGroup]);
+
   // 3. ปรับ Logic ส่งข้อมูลตาม mode
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,16 +274,16 @@ export default function ArticleForm({
               className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
             >
               <span>
-                {formData.categoryId === "1" && "คลังข้อมูลโรคที่มีผลกระทบสูง"}
-                {formData.categoryId === "2" && "คลังข้อมูลการวิจัย"}
-                {formData.categoryId === "3" && "คลังข้อมูลนวัตกรรม"}
-                {formData.categoryId === "4" && "คลังข้อมูลความรู้ด้านสุขภาพ"}
-                {!formData.categoryId && "เลือกหมวดหมู่..."}
+                {/* ดึงชื่อมาแสดงผลแบบ Dynamic โดยค้นหาจาก id */}
+                {categoriesData?.Categories?.find(
+                  (c: any) => String(c.id) === String(formData.categoryId)
+                )?.name || "-- เลือกหมวดหมู่ --"}
               </span>
               <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
+
             <ul
               tabIndex={0}
               className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1"
@@ -216,30 +291,28 @@ export default function ArticleForm({
               <li className="menu-title px-1 py-1">
                 <div className="px-2 py-1 border-b border-slate-100 w-full">
                   <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-                    เลือกหมวดหมู่
+                    -- เลือกหมวดหมู่ --
                   </p>
                 </div>
               </li>
-              {[
-                { id: "1", label: "คลังข้อมูลโรคที่มีผลกระทบสูง" },
-                { id: "2", label: "คลังข้อมูลการวิจัย" },
-                { id: "3", label: "คลังข้อมูลนวัตกรรม" },
-                { id: "4", label: "คลังข้อมูลความรู้ด้านสุขภาพ" },
-              ].map((item) => (
+
+              {/* วนลูปข้อมูล Dynamic จาก API */}
+              {categoriesData?.Categories?.map((item: any) => (
                 <li key={item.id}>
                   <button
                     type="button"
                     onClick={() => {
-                      handleChange({ target: { name: "categoryId", value: item.id } } as any);
+                      // แปลงเป็น String เพื่อให้เปรียบเทียบตระกูลข้อมูลได้ชัวร์ๆ
+                      handleChange({ target: { name: "categoryId", value: String(item.id) } } as any);
                       (document.activeElement as HTMLElement)?.blur();
                     }}
                     className={`px-3 py-2.5 rounded-xl transition-all ${
-                      formData.categoryId === item.id
+                      String(formData.categoryId) === String(item.id)
                         ? "bg-purple-600 text-white font-semibold"
                         : "hover:bg-purple-50 hover:text-purple-700"
                     }`}
                   >
-                    {item.label}
+                    {item.name}
                   </button>
                 </li>
               ))}
@@ -370,52 +443,125 @@ export default function ArticleForm({
 
       {/* 4. ภารกิจ / กลุ่มงาน / งาน */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
+        {/* ภารกิจ */}
+        <div className="relative">
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
             ภารกิจ
           </label>
-          <div className="relative">
-            <select
-              name="mission"
-              value={formData.mission}
-              onChange={handleChange}
-              className="w-full p-2.5 text-sm bg-white border border-slate-200 rounded-xl appearance-none focus:outline-none focus:ring-1 focus:ring-purple-500 text-slate-700 font-medium pr-8 cursor-pointer"
+          <div className="dropdown w-full">
+            <div
+              tabIndex={0}
+              role="button"
+              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
             >
-              <option value="">-- ค้นหาภารกิจ --</option>
-              <option value="1">ภารกิจที่ 1</option>
-              <option value="2">ภารกิจที่ 2</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span>
+                {missionData?.Depart?.find(
+                  (c: any) => String(c.HR_DEPART_ID) === String(formData.mission)
+                )?.HR_DEPART_NAME || "-- เลือกภารกิจ --"}
+              </span>
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
+
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1"
+            >
+              <li className="menu-title px-1 py-1">
+                <div className="px-2 py-1 border-b border-slate-100 w-full">
+                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
+                    -- เลือกภารกิจ --
+                  </p>
+                </div>
+              </li>
+
+              {/* วนลูปข้อมูล Dynamic จาก API */}
+              {missionData?.Depart?.map((item: any) => (
+                <li key={item.HR_DEPART_ID}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // อัปเดตภารกิจ พร้อมล้างค่า กลุ่มงาน และ งาน เดิมออก
+                      setFormData((prev) => ({
+                        ...prev,
+                        mission: String(item.HR_DEPART_ID),
+                        workGroup: "", // ล้างค่ากลุ่มงาน
+                        job: "",       // ล้างค่างาน
+                      }));
+                      (document.activeElement as HTMLElement)?.blur();
+                    }}
+                    className={`px-3 py-2.5 rounded-xl transition-all ${
+                      String(formData.mission) === String(item.HR_DEPART_ID)
+                        ? "bg-purple-600 text-white font-semibold"
+                        : "hover:bg-purple-50 hover:text-purple-700"
+                    }`}
+                  >
+                    {item.HR_DEPART_NAME}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        <div>
+        {/* กลุ่มงาน */}
+        <div className="relative">
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
             กลุ่มงาน
           </label>
-          <div className="relative">
-            <select
-              name="workGroup"
-              value={formData.workGroup}
-              onChange={handleChange}
-              className="w-full p-2.5 text-sm bg-white border border-slate-200 rounded-xl appearance-none focus:outline-none focus:ring-1 focus:ring-purple-500 text-slate-700 font-medium pr-8 cursor-pointer"
+          <div className="dropdown w-full">
+            <div
+              tabIndex={0}
+              role="button"
+              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
             >
-              <option value="">-- ค้นหากลุ่มงาน --</option>
-              <option value="1">กลุ่มงานที่ 1</option>
-              <option value="2">กลุ่มงานที่ 2</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span>
+                {workGroupsData?.DepartMent?.find(
+                  (c: any) => String(c.HR_DEPARTMENT_ID) === String(formData.workGroup)
+                )?.HR_DEPARTMENT_NAME || "-- เลือกกลุ่มงาน --"}
+              </span>
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
+
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1"
+            >
+              <li className="menu-title px-1 py-1">
+                <div className="px-2 py-1 border-b border-slate-100 w-full">
+                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
+                    -- เลือกกลุ่มงาน --
+                  </p>
+                </div>
+              </li>
+
+              {/* วนลูปข้อมูล Dynamic จาก API */}
+              {workGroupsData?.DepartMent?.map((item: any) => (
+                <li key={item.HR_DEPARTMENT_ID}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleChange({ target: { name: "workGroup", value: String(item.HR_DEPARTMENT_ID) } } as any);
+                      (document.activeElement as HTMLElement)?.blur();
+                    }}
+                    className={`px-3 py-2.5 rounded-xl transition-all ${
+                      String(formData.workGroup) === String(item.HR_DEPARTMENT_ID)
+                        ? "bg-purple-600 text-white font-semibold"
+                        : "hover:bg-purple-50 hover:text-purple-700"
+                    }`}
+                  >
+                    {item.HR_DEPARTMENT_NAME}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
+        {/* งาน */}
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
             งาน
@@ -550,7 +696,7 @@ export default function ArticleForm({
       {/* 8. Full Content */}
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          เนื้อหาฉบับเต็ม (content) <span className="text-red-500">*</span>
+          เนื้อหาฉบับเต็ม (content)
         </label>
         {/* เรียกใช้งาน RichTextEditor แทน textarea เดิม */}
         <RichTextEditor

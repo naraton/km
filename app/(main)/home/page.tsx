@@ -33,7 +33,7 @@ interface CommentProps {
 // --- Mock Data ---
 const mockCategories = [
   {
-    title: "คลังข้อมูลโรคที่มีผลกระทบสูง",
+    title: "คลังข้อมูลที่เป็นแนวปฏิบัติที่ดี (Good Practice)",
     icon: <FaHeartbeat className="w-5 h-5 text-purple-600" />,
     items: [
       {
@@ -68,7 +68,7 @@ const mockCategories = [
       },
       {
         image:
-          "https://images.unsplash.com/photo-1618101980932-5a981c2f90a9?w=500&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&auto=format&fit=crop",
         title: "อุบัติการณ์ ปัจจัยเสี่ยงของภาวะลิ่มเลือดอุดตัน...",
         description: "Journal of Hematology and Transfusion Medicine...",
         likes: 1,
@@ -100,7 +100,7 @@ const mockCategories = [
     ],
   },
   {
-    title: "คลังข้อมูลความรู้ด้านสุขภาพ",
+    title: "คลังข้อมูล CQI",
     icon: <FaBookOpen className="w-5 h-5 text-purple-600" />,
     items: [
       {
