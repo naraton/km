@@ -29,3 +29,19 @@
 .recharts-responsive-container {
   outline: none !important;
 }
+
+.toast-success {
+  border: 1px solid #22c55e;
+}
+
+.toast-error {
+  border: 1px solid #ef4444;
+}
+
+.toast-warning {
+  border: 1px solid #f59e0b;
+}
+
+.toast-info {
+  border: 1px solid #3b82f6;
+}

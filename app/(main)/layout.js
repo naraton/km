@@ -1,6 +1,7 @@
 import "../globals.css";
 import LayoutDrawer from "../components/LayoutDrawer";
 // import AuthWrapper from "../components/AuthWrapper";
+import { Toaster } from "react-hot-toast";
 import { Kanit } from "next/font/google";
 
 const kanit = Kanit({
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
       <body className={`${kanit.className} min-h-screen`}>
         {/* <AuthWrapper requireAuth={true}> */}
         <LayoutDrawer>{children}</LayoutDrawer>
+        <Toaster position="top-right" reverseOrder={false} />
         {/* </AuthWrapper> */}
       </body>
     </html>

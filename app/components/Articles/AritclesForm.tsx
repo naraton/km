@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "../RichTextEditor";
+import toast, { Toaster } from "react-hot-toast";
 
 // 1. เพิ่ม Type สำหรับ Props
 interface ArticleFormProps {
@@ -19,10 +20,16 @@ export default function ArticleForm({
 }: ArticleFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Drag & Drop State สำหรับรูปภาพ
   const [isDragging, setIsDragging] = useState(false);
+  // Drag & Drop State สำหรับ PDF (แยกแยกต่างหาก)
+  const [isPdfDragging, setIsPdfDragging] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
+    categoryId: "",
+    isPublished: 1,
     title: "",
     tag: "",
     description: "",
@@ -31,15 +38,22 @@ export default function ArticleForm({
     job: "",
     owner: "",
     implementation: "",
+    coverImage: "",
     content: "",
-    attachment: "",
-    categoryId: "",
+    pdfContent: "",
     userId: "1",
-    isPublished: 1,
   });
 
-  // สถานะไฟล์ที่อัปโหลด
+  // สถานะไฟล์รูปภาพที่อัปโหลด
   const [selectedFile, setSelectedFile] = useState<{
+    name: string;
+    size: string;
+    type: string;
+    dataUrl: string;
+  } | null>(null);
+
+  // สถานะไฟล์ PDF ที่อัปโหลด
+  const [selectedPdf, setSelectedPdf] = useState<{
     name: string;
     size: string;
     type: string;
@@ -50,6 +64,8 @@ export default function ArticleForm({
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setFormData({
+        categoryId: String(initialData.categoryId || ""),
+        isPublished: initialData.isPublished ?? 1,
         title: initialData.title || "",
         tag: initialData.tag || "",
         description: initialData.description || "",
@@ -58,20 +74,29 @@ export default function ArticleForm({
         job: initialData.job || "",
         owner: initialData.owner || "",
         implementation: initialData.implementation || "",
+        coverImage: initialData.coverImage || "",
         content: initialData.content || "",
-        attachment: initialData.attachment || "",
-        categoryId: String(initialData.categoryId || ""),
+        pdfContent: initialData.pdfContent || "",
         userId: String(initialData.userId || "1"),
-        isPublished: initialData.isPublished ?? 1,
       });
 
       // ถ้ามีรูปเดิมแสดงพรีวิว
-      if (initialData.attachment) {
+      if (initialData.coverImage) {
         setSelectedFile({
-          name: "รูปภาพเดิมที่อัปโหลดไว้",
+          name: "รูปภาพปกเดิมที่อัปโหลดไว้",
           size: "-",
           type: "image/*",
-          dataUrl: initialData.attachment,
+          dataUrl: initialData.coverImage,
+        });
+      }
+
+      // ถ้ามีไฟล์ PDF เดิมแสดงพรีวิว
+      if (initialData.pdfContent) {
+        setSelectedPdf({
+          name: "เอกสาร PDF เดิมที่อัปโหลดไว้",
+          size: "-",
+          type: "application/pdf",
+          dataUrl: initialData.pdfContent,
         });
       }
     }
@@ -86,15 +111,15 @@ export default function ArticleForm({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ฟังก์ชันแปลงไฟล์เป็น Base64
+  // --- [ระบบจัดการไฟล์รูปภาพ] ---
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("รองรับเฉพาะไฟล์รูปภาพ (PNG, JPG, WebP ฯลฯ) เท่านั้นครับ");
+      toast.error("รองรับเฉพาะไฟล์รูปภาพ (PNG, JPG, WebP ฯลฯ) เท่านั้นครับ");
       return;
     }
 
     if (file.size > 1 * 1024 * 1024) {
-      alert("ขนาดไฟล์ต้องไม่เกิน 1MB ครับ");
+      toast.error("ขนาดไฟล์รูปภาพต้องไม่เกิน 1MB ครับ");
       return;
     }
 
@@ -111,13 +136,12 @@ export default function ArticleForm({
 
       setFormData((prev) => ({
         ...prev,
-        attachment: result,
+        coverImage: result,
       }));
     };
     reader.readAsDataURL(file);
   };
 
-  // Drag & Drop Handlers
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
@@ -144,10 +168,70 @@ export default function ArticleForm({
 
   const removeFile = () => {
     setSelectedFile(null);
-    setFormData((prev) => ({ ...prev, attachment: "" }));
+    setFormData((prev) => ({ ...prev, coverImage: "" }));
   };
 
-  //get data
+  // --- [ระบบจัดการไฟล์ PDF] ---
+  const processPdfFile = (file: File) => {
+    if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
+      toast.error("กรุณาอัปโหลดเฉพาะไฟล์ PDF เท่านั้นครับ");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("ขนาดไฟล์ PDF ต้องไม่เกิน 10MB ครับ");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+
+      setSelectedPdf({
+        name: file.name,
+        size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+        type: file.type,
+        dataUrl: result,
+      });
+
+      setFormData((prev) => ({
+        ...prev,
+        pdfContent: result,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePdfDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsPdfDragging(true);
+  };
+
+  const handlePdfDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsPdfDragging(false);
+  };
+
+  const handlePdfDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsPdfDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processPdfFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handlePdfFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processPdfFile(e.target.files[0]);
+    }
+  };
+
+  const removePdfFile = () => {
+    setSelectedPdf(null);
+    setFormData((prev) => ({ ...prev, pdfContent: "" }));
+  };
+
+  // --- Fetch Master Data --------
   const [categoriesData, setCategoriesData] = useState<any>(null);
   const [missionData, setMissionData] = useState<any>(null);
 
@@ -170,10 +254,9 @@ export default function ArticleForm({
     getData();
   }, []);
 
-
-  //ดึงกลุ่มงาน เมื่อ formData.mission (ภารกิจ) เปลี่ยน
+  // ดึงกลุ่มงาน เมื่อ formData.mission เปลี่ยน
   const [workGroupsData, setWorkGroupsData] = useState<any>(null);
-  
+
   useEffect(() => {
     const getWorkGroups = async () => {
       if (!formData.mission) {
@@ -182,7 +265,6 @@ export default function ArticleForm({
       }
 
       try {
-        // ส่ง query parameter HR_DEPART_ID ไปยัง API
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/Department?departId=${formData.mission}`
         );
@@ -197,7 +279,7 @@ export default function ArticleForm({
     getWorkGroups();
   }, [formData.mission]);
 
-  //ดึงงาน เมื่อ formData.workGroup (กลุ่มงาน) เปลี่ยน
+  // ดึงงาน เมื่อ formData.workGroup เปลี่ยน
   const [jobsData, setJobsData] = useState<any>(null);
 
   useEffect(() => {
@@ -222,14 +304,82 @@ export default function ArticleForm({
     getJobs();
   }, [formData.workGroup]);
 
-  // 3. ปรับ Logic ส่งข้อมูลตาม mode
+  // [Logic Validation] ------------------------------
+  const requiredFields: Record<string, string> = {
+    categoryId: "หมวดหมู่ความรู้",
+    title: "หัวข้อบทความ",
+    description: "คำอธิบายสั้น",
+    implementation: "การนำไปใช้งาน/การขยายผล",
+  };
+
+  const focusField = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      if (!el.hasAttribute("tabindex")) {
+        el.setAttribute("tabindex", "-1");
+      }
+      el.focus({ preventScroll: true });
+
+      // 1. remove border
+      el.classList.remove("border-slate-200");
+
+      // 2. add red border
+      el.classList.add(
+        "!border-2",
+        "!border-red-500",
+        "ring-4",
+        "ring-red-200",
+        "bg-red-50/20"
+      );
+
+      // 3. Remove after 3 seconds
+      setTimeout(() => {
+        el.classList.remove(
+          "!border-2",
+          "!border-red-500",
+          "ring-4",
+          "ring-red-200",
+          "bg-red-50/20"
+        );
+        el.classList.add("border-slate-200"); // คืนสีขอบเดิม
+      }, 3000);
+    }
+  };
+
+  // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    for (const key in requiredFields) {
+      const value = formData[key as keyof typeof formData];
+
+      if (!value || (typeof value === "string" && value.trim() === "")) {
+        // ปรับคำขึ้นต้นตามประเภทฟิลด์ (เลือก / กรอก)
+        const actionText = key === "categoryId" ? "เลือก" : "กรอก";
+        const message = `กรุณา${actionText}${requiredFields[key]}`;
+
+        // โฟกัสฟิลด์ทันที
+        focusField(key);
+
+        // แสดง Toast
+        toast.error(message, {
+          className: "toast-error",
+          style: { cursor: "pointer" },
+        });
+
+        return; // หยุดการทำงาน
+      }
+    }
+
     setIsSubmitting(true);
+    const toastId = toast.loading("กำลังบันทึกข้อมูล...");
 
     const isEdit = mode === "edit";
     const endpoint = isEdit ? `/api/articles/${articleId}` : "/api/articles";
-    const method = isEdit ? "PUT" : "POST";
+    const method = "POST";
 
     try {
       const res = await fetch(endpoint, {
@@ -239,20 +389,16 @@ export default function ArticleForm({
       });
 
       if (res.ok) {
-        alert(
-          isEdit
-            ? "อัปเดตบทความเรียบร้อยแล้ว!"
-            : "บันทึกบทความเรียบร้อยแล้ว!"
-        );
+        toast.success(isEdit ? "อัปเดตบทความเรียบร้อย!" : "บันทึกบทความเรียบร้อย!", { id: toastId });
         router.push("/");
         router.refresh();
       } else {
         const errorData = await res.json();
-        alert(`เกิดข้อผิดพลาด: ${errorData.message || "ไม่สามารถดำเนินการได้"}`);
+        toast.error(`เกิดข้อผิดพลาด: ${errorData.message || "ไม่สามารถทำรายการได้"}`, { id: toastId });
       }
     } catch (error) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
@@ -260,21 +406,22 @@ export default function ArticleForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <Toaster position="top-right" reverseOrder={false} />
+
       {/* 1. Category & Status */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* Category Dropdown */}
         <div className="relative">
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            หมวดหมู่ความรู้ (categoryId) <span className="text-red-500">*</span>
+            หมวดหมู่ความรู้ <span className="text-red-500">*</span>
           </label>
           <div className="dropdown w-full">
             <div
+              id="categoryId"
               tabIndex={0}
               role="button"
-              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
+              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer"
             >
               <span>
-                {/* ดึงชื่อมาแสดงผลแบบ Dynamic โดยค้นหาจาก id */}
                 {categoriesData?.Categories?.find(
                   (c: any) => String(c.id) === String(formData.categoryId)
                 )?.name || "-- เลือกหมวดหมู่ --"}
@@ -283,34 +430,19 @@ export default function ArticleForm({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1"
-            >
-              <li className="menu-title px-1 py-1">
-                <div className="px-2 py-1 border-b border-slate-100 w-full">
-                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-                    -- เลือกหมวดหมู่ --
-                  </p>
-                </div>
-              </li>
-
-              {/* วนลูปข้อมูล Dynamic จาก API */}
+            <ul tabIndex={0} className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1">
               {categoriesData?.Categories?.map((item: any) => (
                 <li key={item.id}>
                   <button
                     type="button"
                     onClick={() => {
-                      // แปลงเป็น String เพื่อให้เปรียบเทียบตระกูลข้อมูลได้ชัวร์ๆ
                       handleChange({ target: { name: "categoryId", value: String(item.id) } } as any);
                       (document.activeElement as HTMLElement)?.blur();
                     }}
-                    className={`px-3 py-2.5 rounded-xl transition-all ${
-                      String(formData.categoryId) === String(item.id)
-                        ? "bg-purple-600 text-white font-semibold"
-                        : "hover:bg-purple-50 hover:text-purple-700"
-                    }`}
+                    className={`px-3 py-2.5 rounded-xl transition-all ${String(formData.categoryId) === String(item.id)
+                      ? "bg-purple-600 text-white font-semibold"
+                      : "hover:bg-purple-50 hover:text-purple-700"
+                      }`}
                   >
                     {item.name}
                   </button>
@@ -320,40 +452,25 @@ export default function ArticleForm({
           </div>
         </div>
 
-        {/* Status Dropdown */}
         <div className="relative">
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            สถานะการเผยแพร่ (isPublished)
+            สถานะการเผยแพร่
           </label>
           <div className="dropdown w-full">
             <div
               tabIndex={0}
               role="button"
-              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
+              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer"
             >
               <span className="flex items-center gap-2">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    formData.isPublished === 1 ? "bg-emerald-500" : "bg-amber-500"
-                  }`}
-                />
+                <span className={`w-2 h-2 rounded-full ${formData.isPublished === 1 ? "bg-emerald-500" : "bg-amber-500"}`} />
                 {formData.isPublished === 1 ? "เผยแพร่ทันที (Public)" : "บันทึกเป็นฉบับร่าง (Draft)"}
               </span>
               <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1"
-            >
-              <li className="menu-title px-1 py-1">
-                <div className="px-2 py-1 border-b border-slate-100 w-full">
-                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-                    เลือกสถานะ
-                  </p>
-                </div>
-              </li>
+            <ul tabIndex={0} className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1">
               <li>
                 <button
                   type="button"
@@ -361,13 +478,9 @@ export default function ArticleForm({
                     setFormData((prev) => ({ ...prev, isPublished: 1 }));
                     (document.activeElement as HTMLElement)?.blur();
                   }}
-                  className={`px-3 py-2.5 rounded-xl transition-all flex items-center gap-2 ${
-                    formData.isPublished === 1
-                      ? "bg-emerald-600 text-white font-semibold"
-                      : "hover:bg-emerald-50 hover:text-emerald-700"
-                  }`}
+                  className={`px-3 py-2.5 rounded-xl transition-all flex items-center gap-2 ${formData.isPublished === 1 ? "bg-emerald-600 text-white font-semibold" : "hover:bg-emerald-50"
+                    }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${formData.isPublished === 1 ? "bg-white" : "bg-emerald-500"}`} />
                   เผยแพร่ทันที (Public)
                 </button>
               </li>
@@ -378,13 +491,9 @@ export default function ArticleForm({
                     setFormData((prev) => ({ ...prev, isPublished: 0 }));
                     (document.activeElement as HTMLElement)?.blur();
                   }}
-                  className={`px-3 py-2.5 rounded-xl transition-all flex items-center gap-2 ${
-                    formData.isPublished === 0
-                      ? "bg-amber-500 text-white font-semibold"
-                      : "hover:bg-amber-50 hover:text-amber-700"
-                  }`}
+                  className={`px-3 py-2.5 rounded-xl transition-all flex items-center gap-2 ${formData.isPublished === 0 ? "bg-amber-500 text-white font-semibold" : "hover:bg-amber-50"
+                    }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${formData.isPublished === 0 ? "bg-white" : "bg-amber-500"}`} />
                   บันทึกเป็นฉบับร่าง (Draft)
                 </button>
               </li>
@@ -397,15 +506,15 @@ export default function ArticleForm({
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-            หัวข้อบทความ (title) <span className="text-red-500">*</span>
+            หัวข้อบทความ <span className="text-red-500">*</span>
           </label>
           <input
+            id="title"
             type="text"
             name="title"
             placeholder="เช่น ยาเสพติด : สมองติดยา"
             value={formData.title}
             onChange={handleChange}
-            required
             className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500 focus:bg-white text-slate-800"
           />
         </div>
@@ -417,7 +526,7 @@ export default function ArticleForm({
           <input
             type="text"
             name="tag"
-            placeholder="เช่น ยาเสพติด, สุขภาพ, การป้องกัน (คั่นด้วยเครื่องหมายจุลภาค)"
+            placeholder="เช่น ยาเสพติด, สุขภาพ, การป้องกัน"
             value={formData.tag}
             onChange={handleChange}
             className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500 focus:bg-white text-slate-800"
@@ -428,15 +537,15 @@ export default function ArticleForm({
       {/* 3. Description */}
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          คำอธิบายสั้น / เรื่องย่อ (description) <span className="text-red-500">*</span>
+          คำอธิบายสั้น / เรื่องย่อ <span className="text-red-500">*</span>
         </label>
         <textarea
+          id="description"
           name="description"
           rows={2}
           placeholder="สรุปเนื้อหาสั้นๆ 2-3 บรรทัด..."
           value={formData.description}
           onChange={handleChange}
-          required
           className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500 focus:bg-white text-slate-800"
         />
       </div>
@@ -452,7 +561,7 @@ export default function ArticleForm({
             <div
               tabIndex={0}
               role="button"
-              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
+              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer"
             >
               <span>
                 {missionData?.Depart?.find(
@@ -463,39 +572,24 @@ export default function ArticleForm({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1"
-            >
-              <li className="menu-title px-1 py-1">
-                <div className="px-2 py-1 border-b border-slate-100 w-full">
-                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-                    -- เลือกภารกิจ --
-                  </p>
-                </div>
-              </li>
-
-              {/* วนลูปข้อมูล Dynamic จาก API */}
+            <ul tabIndex={0} className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1">
               {missionData?.Depart?.map((item: any) => (
                 <li key={item.HR_DEPART_ID}>
                   <button
                     type="button"
                     onClick={() => {
-                      // อัปเดตภารกิจ พร้อมล้างค่า กลุ่มงาน และ งาน เดิมออก
                       setFormData((prev) => ({
                         ...prev,
                         mission: String(item.HR_DEPART_ID),
-                        workGroup: "", // ล้างค่ากลุ่มงาน
-                        job: "",       // ล้างค่างาน
+                        workGroup: "",
+                        job: "",
                       }));
                       (document.activeElement as HTMLElement)?.blur();
                     }}
-                    className={`px-3 py-2.5 rounded-xl transition-all ${
-                      String(formData.mission) === String(item.HR_DEPART_ID)
-                        ? "bg-purple-600 text-white font-semibold"
-                        : "hover:bg-purple-50 hover:text-purple-700"
-                    }`}
+                    className={`px-3 py-2.5 rounded-xl transition-all ${String(formData.mission) === String(item.HR_DEPART_ID)
+                      ? "bg-purple-600 text-white font-semibold"
+                      : "hover:bg-purple-50 hover:text-purple-700"
+                      }`}
                   >
                     {item.HR_DEPART_NAME}
                   </button>
@@ -514,7 +608,7 @@ export default function ArticleForm({
             <div
               tabIndex={0}
               role="button"
-              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer"
+              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer"
             >
               <span>
                 {workGroupsData?.DepartMent?.find(
@@ -525,20 +619,7 @@ export default function ArticleForm({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1"
-            >
-              <li className="menu-title px-1 py-1">
-                <div className="px-2 py-1 border-b border-slate-100 w-full">
-                  <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-                    -- เลือกกลุ่มงาน --
-                  </p>
-                </div>
-              </li>
-
-              {/* วนลูปข้อมูล Dynamic จาก API */}
+            <ul tabIndex={0} className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1">
               {workGroupsData?.DepartMent?.map((item: any) => (
                 <li key={item.HR_DEPARTMENT_ID}>
                   <button
@@ -547,11 +628,10 @@ export default function ArticleForm({
                       handleChange({ target: { name: "workGroup", value: String(item.HR_DEPARTMENT_ID) } } as any);
                       (document.activeElement as HTMLElement)?.blur();
                     }}
-                    className={`px-3 py-2.5 rounded-xl transition-all ${
-                      String(formData.workGroup) === String(item.HR_DEPARTMENT_ID)
-                        ? "bg-purple-600 text-white font-semibold"
-                        : "hover:bg-purple-50 hover:text-purple-700"
-                    }`}
+                    className={`px-3 py-2.5 rounded-xl transition-all ${String(formData.workGroup) === String(item.HR_DEPARTMENT_ID)
+                      ? "bg-purple-600 text-white font-semibold"
+                      : "hover:bg-purple-50 hover:text-purple-700"
+                      }`}
                   >
                     {item.HR_DEPARTMENT_NAME}
                   </button>
@@ -562,26 +642,44 @@ export default function ArticleForm({
         </div>
 
         {/* งาน */}
-        <div>
+        <div className="relative">
           <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
             งาน
           </label>
-          <div className="relative">
-            <select
-              name="job"
-              value={formData.job}
-              onChange={handleChange}
-              className="w-full p-2.5 text-sm bg-white border border-slate-200 rounded-xl appearance-none focus:outline-none focus:ring-1 focus:ring-purple-500 text-slate-700 font-medium pr-8 cursor-pointer"
+          <div className="dropdown w-full">
+            <div
+              tabIndex={0}
+              role="button"
+              className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between font-medium text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer"
             >
-              <option value="">-- ค้นหางาน --</option>
-              <option value="1">งานที่ 1</option>
-              <option value="2">งานที่ 2</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span>
+                {jobsData?.DepartMentSub?.find(
+                  (c: any) => String(c.HR_DEPARTMENT_SUB_ID) === String(formData.job)
+                )?.HR_DEPARTMENT_SUB_NAME || "-- เลือกงาน --"}
+              </span>
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
+            <ul tabIndex={0} className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 font-medium text-xs z-[100] space-y-1">
+              {jobsData?.DepartMentSub?.map((item: any) => (
+                <li key={item.HR_DEPARTMENT_SUB_ID}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleChange({ target: { name: "job", value: String(item.HR_DEPARTMENT_SUB_ID) } } as any);
+                      (document.activeElement as HTMLElement)?.blur();
+                    }}
+                    className={`px-3 py-2.5 rounded-xl transition-all ${String(formData.job) === String(item.HR_DEPARTMENT_SUB_ID)
+                      ? "bg-purple-600 text-white font-semibold"
+                      : "hover:bg-purple-50 hover:text-purple-700"
+                      }`}
+                  >
+                    {item.HR_DEPARTMENT_SUB_NAME}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
@@ -589,7 +687,7 @@ export default function ArticleForm({
       {/* 5. เจ้าของผลงาน */}
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          เจ้าของผลงาน (owner) <span className="text-red-500">*</span>
+          เจ้าของผลงาน <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -597,7 +695,6 @@ export default function ArticleForm({
           placeholder="ชื่อ-นามสกุล"
           value={formData.owner}
           onChange={handleChange}
-          required
           className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500 focus:bg-white text-slate-800"
         />
       </div>
@@ -605,40 +702,39 @@ export default function ArticleForm({
       {/* 6. การนำไปใช้งาน/การขยายผล */}
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          การนำไปใช้งาน/การขยายผล (Implementation/Expansion) <span className="text-red-500">*</span>
+          การนำไปใช้งาน/การขยายผล <span className="text-red-500">*</span>
         </label>
         <textarea
+          id="implementation"
           name="implementation"
           rows={2}
           placeholder="สรุปเนื้อหาสั้นๆ 2-3 บรรทัด..."
           value={formData.implementation}
           onChange={handleChange}
-          required
           className="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500 focus:bg-white text-slate-800"
         />
       </div>
 
-      {/* 7. Drag & Drop File Upload */}
+      {/* 7. Image Upload (Drag & Drop) */}
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          รูปภาพปก (Drag & Drop File)
+          รูปภาพปก
         </label>
 
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
-            isDragging
-              ? "border-purple-600 bg-purple-50/50 scale-[1.01]"
-              : "border-purple-200 bg-slate-50/50 hover:border-purple-400 hover:bg-purple-50/20"
-          }`}
+          className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${isDragging
+            ? "border-purple-600 bg-purple-50/50 scale-[1.01]"
+            : "border-purple-200 bg-slate-50/50 hover:border-purple-400 hover:bg-purple-50/20"
+            }`}
         >
           <input
             type="file"
             accept="image/*"
             onChange={handleFileInput}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
           />
 
           {!selectedFile ? (
@@ -658,7 +754,7 @@ export default function ArticleForm({
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-purple-200 shadow-xs relative z-10">
+            <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-purple-200 shadow-xs relative z-20">
               <div className="flex items-center gap-3 overflow-hidden">
                 <img
                   src={selectedFile.dataUrl}
@@ -681,8 +777,8 @@ export default function ArticleForm({
                   e.stopPropagation();
                   removeFile();
                 }}
-                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                title="ลบไฟล์"
+                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 z-30"
+                title="ลบไฟล์รูปภาพ"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -693,12 +789,11 @@ export default function ArticleForm({
         </div>
       </div>
 
-      {/* 8. Full Content */}
+      {/* 8. Full Content (RichTextEditor) */}
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          เนื้อหาฉบับเต็ม (content)
+          เนื้อหาฉบับเต็ม (Content)
         </label>
-        {/* เรียกใช้งาน RichTextEditor แทน textarea เดิม */}
         <RichTextEditor
           value={formData.content}
           onChange={(newContent) =>
@@ -707,24 +802,95 @@ export default function ArticleForm({
         />
       </div>
 
-      {/* Submit Buttons */}
-      <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-        <Link
-          href="/"
-          className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+      {/* 9. PDF Content Upload (เพิ่มใหม่) */}
+      <div>
+        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+          ไฟล์เนื้อหาฉบับ PDF (Drag & Drop File)
+        </label>
+
+        <div
+          onDragOver={handlePdfDragOver}
+          onDragLeave={handlePdfDragLeave}
+          onDrop={handlePdfDrop}
+          className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${isPdfDragging
+            ? "border-red-500 bg-red-50/50 scale-[1.01]"
+            : "border-slate-200 bg-slate-50/50 hover:border-red-400 hover:bg-red-50/20"
+            }`}
+        >
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={handlePdfFileInput}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          />
+
+          {!selectedPdf ? (
+            <div className="space-y-3 pointer-events-none">
+              <div className="w-12 h-12 mx-auto rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-700">
+                  ลากไฟล์ PDF มาวางที่นี่ หรือ <span className="text-red-600 underline">คลิกเพื่อเลือกไฟล์</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  รองรับเฉพาะไฟล์ PDF ขนาดไม่เกิน 10MB
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-red-200 shadow-xs relative z-20">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-12 h-12 rounded-lg bg-red-50 border border-red-100 text-red-500 flex items-center justify-center shrink-0">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="text-left truncate">
+                  <p className="text-xs font-semibold text-slate-800 truncate">
+                    {selectedPdf.name}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    {selectedPdf.size}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removePdfFile();
+                }}
+                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 z-30"
+                title="ลบไฟล์ PDF"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ปุ่ม Actions */}
+      <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="px-5 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-semibold transition-all cursor-pointer"
         >
           ยกเลิก
-        </Link>
+        </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-6 py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-semibold text-sm rounded-full shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+          className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-purple-200 transition-all disabled:opacity-50 cursor-pointer"
         >
-          {isSubmitting
-            ? "กำลังบันทึก..."
-            : mode === "edit"
-            ? "บันทึกการแก้ไข"
-            : "บันทึกบทความ"}
+          {isSubmitting ? "กำลังบันทึก..." : mode === "edit" ? "อัปเดตบทความ" : "บันทึกบทความ"}
         </button>
       </div>
     </form>
