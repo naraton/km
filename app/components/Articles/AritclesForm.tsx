@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "../RichTextEditor";
 import toast, { Toaster } from "react-hot-toast";
@@ -38,9 +37,9 @@ export default function ArticleForm({
     job: "",
     owner: "",
     implementation: "",
-    coverImage: "",
+    coverImage: null as File | null,
     content: "",
-    pdfContent: "",
+    pdfContent: null as File | null,
     userId: "1",
   });
 
@@ -136,7 +135,7 @@ export default function ArticleForm({
 
       setFormData((prev) => ({
         ...prev,
-        coverImage: result,
+        coverImage: file,
       }));
     };
     reader.readAsDataURL(file);
@@ -168,7 +167,7 @@ export default function ArticleForm({
 
   const removeFile = () => {
     setSelectedFile(null);
-    setFormData((prev) => ({ ...prev, coverImage: "" }));
+    setFormData((prev) => ({ ...prev, coverImage: null }));
   };
 
   // --- [ระบบจัดการไฟล์ PDF] ---
@@ -196,7 +195,7 @@ export default function ArticleForm({
 
       setFormData((prev) => ({
         ...prev,
-        pdfContent: result,
+        pdfContent: file,
       }));
     };
     reader.readAsDataURL(file);
@@ -228,7 +227,7 @@ export default function ArticleForm({
 
   const removePdfFile = () => {
     setSelectedPdf(null);
-    setFormData((prev) => ({ ...prev, pdfContent: "" }));
+    setFormData((prev) => ({ ...prev, pdfContent: null }));
   };
 
   // --- Fetch Master Data --------
@@ -348,7 +347,7 @@ export default function ArticleForm({
     }
   };
 
-  // Submit Handler
+  // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -357,20 +356,17 @@ export default function ArticleForm({
       const value = formData[key as keyof typeof formData];
 
       if (!value || (typeof value === "string" && value.trim() === "")) {
-        // ปรับคำขึ้นต้นตามประเภทฟิลด์ (เลือก / กรอก)
         const actionText = key === "categoryId" ? "เลือก" : "กรอก";
         const message = `กรุณา${actionText}${requiredFields[key]}`;
 
-        // โฟกัสฟิลด์ทันที
         focusField(key);
 
-        // แสดง Toast
         toast.error(message, {
           className: "toast-error",
           style: { cursor: "pointer" },
         });
 
-        return; // หยุดการทำงาน
+        return;
       }
     }
 
@@ -378,24 +374,59 @@ export default function ArticleForm({
     const toastId = toast.loading("กำลังบันทึกข้อมูล...");
 
     const isEdit = mode === "edit";
-    const endpoint = isEdit ? `/api/articles/${articleId}` : "/api/articles";
-    const method = "POST";
+    const endpoint = isEdit ? `/api/articles/update` : "/api/articles/insert";
 
     try {
-      const res = await fetch(endpoint, {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      const formDataToSend = new FormData();
+
+      const isFile = (val: unknown): val is File => {
+        return typeof window !== "undefined" && val instanceof File;
+      };
+
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+
+        if (isFile(value)) {
+          formDataToSend.append(key, value);
+        } else if (typeof value === "object") {
+          formDataToSend.append(key, JSON.stringify(value));
+        } else {
+          formDataToSend.append(key, String(value));
+        }
       });
 
-      if (res.ok) {
-        toast.success(isEdit ? "อัปเดตบทความเรียบร้อย!" : "บันทึกบทความเรียบร้อย!", { id: toastId });
-        router.push("/");
-        router.refresh();
-      } else {
-        const errorData = await res.json();
-        toast.error(`เกิดข้อผิดพลาด: ${errorData.message || "ไม่สามารถทำรายการได้"}`, { id: toastId });
+      // แนบ userId เพิ่มเติมตามต้องการ
+      formDataToSend.append("userId", "1");
+      if (isEdit && articleId) {
+        formDataToSend.append("articleId", String(articleId));
       }
+
+      //console.table(Array.from(formDataToSend.entries()));
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: formDataToSend,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success(
+          isEdit ? "อัปเดตบทความเรียบร้อย!" : "บันทึกบทความเรียบร้อย!",
+          { id: toastId }
+        );
+
+        router.push("/");
+
+      } else {
+        toast.error(
+          `เกิดข้อผิดพลาด: ${data.message || data.error || "ไม่สามารถทำรายการได้"}`,
+          { id: toastId }
+        );
+
+        console.error(data);
+      }
+
     } catch (error) {
       console.error(error);
       toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", { id: toastId });
