@@ -1,27 +1,29 @@
-import React from "react";
+'use client'
+
+import React, { useEffect, useState } from "react";
+import ArticleCard, { Article } from "@/app/components/Articles/ArticleCard";
 import {
   FaBookOpen,
   FaFlask,
   FaLightbulb,
   FaHeartbeat,
   FaUser,
-  FaThumbsUp,
-  FaEye,
 } from "react-icons/fa";
+import Link from "next/link";
 
-// --- Types ---
-interface ContentCardProps {
-  image: string;
-  title: string;
-  description: string;
-  likes: number;
-  views: number;
-}
+// --- Map Icon ให้ตรงกับใน DB ---
+const iconMap: Record<string, React.ReactNode> = {
+  FaHeartbeat: <FaHeartbeat className="w-5 h-5 text-purple-600" />,
+  FaFlask: <FaFlask className="w-5 h-5 text-purple-600" />,
+  FaLightbulb: <FaLightbulb className="w-5 h-5 text-purple-600" />,
+  FaBookOpen: <FaBookOpen className="w-5 h-5 text-purple-600" />,
+};
 
 interface CategorySectionProps {
+  id: number | string;
   title: string;
-  icon: React.ReactNode;
-  items: ContentCardProps[];
+  icon?: React.ReactNode;
+  items: Article[];
 }
 
 interface CommentProps {
@@ -30,190 +32,93 @@ interface CommentProps {
   message: string;
 }
 
-// --- Mock Data ---
-const mockCategories = [
-  {
-    title: "คลังข้อมูลที่เป็นแนวปฏิบัติที่ดี (Good Practice)",
-    icon: <FaHeartbeat className="w-5 h-5 text-purple-600" />,
-    items: [
-      {
-        image:
-          "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=500&auto=format&fit=crop",
-        title: "มะเร็งปากมดลูก : โรคร้ายที่ป้องกันได้",
-        description: "โรคยอดฮิตที่เป็นสาเหตุอันดับต้นๆ ของหญิงไทยและทั่วโลก...",
-        likes: 0,
-        views: 15,
-      },
-      {
-        image:
-          "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=500&auto=format&fit=crop",
-        title: "มาตรฐานการพยาบาลผู้ป่วยโรคสะเก็ดเงิน",
-        description: "แนวทางการดูแลและฟื้นฟูสภาพผู้ป่วยอย่างถูกวิธี...",
-        likes: 0,
-        views: 8,
-      },
-    ],
-  },
-  {
-    title: "คลังข้อมูลการวิจัย",
-    icon: <FaFlask className="w-5 h-5 text-purple-600" />,
-    items: [
-      {
-        image:
-          "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=500&auto=format&fit=crop",
-        title: "ผลของโปรแกรมการจัดการรายกรณีต่อพฤติกรรม...",
-        description: "งานวิจัยติดตามผลพฤติกรรมการดูแลตนเองของผู้ป่วย...",
-        likes: 0,
-        views: 36,
-      },
-      {
-        image:
-          "https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&auto=format&fit=crop",
-        title: "อุบัติการณ์ ปัจจัยเสี่ยงของภาวะลิ่มเลือดอุดตัน...",
-        description: "Journal of Hematology and Transfusion Medicine...",
-        likes: 1,
-        views: 40,
-      },
-    ],
-  },
-  {
-    title: "คลังข้อมูลนวัตกรรม",
-    icon: <FaLightbulb className="w-5 h-5 text-purple-600" />,
-    items: [
-      {
-        image:
-          "https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=500&auto=format&fit=crop",
-        title: "การใช้อากาศยานไร้คนขับสนับสนุนภารกิจทางการแพทย์",
-        description:
-          "กรณีศึกษาพื้นที่ท่องเที่ยวจังหวัดภูเก็ต พังงา และกระบี่...",
-        likes: 2,
-        views: 19,
-      },
-      {
-        image:
-          "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=500&auto=format&fit=crop",
-        title: "คู่มือการสร้างเป้าหมายสำหรับผู้ป่วยแอมเฟตามีน",
-        description: "ในระยะฟื้นฟูสมรรถภาพ...",
-        likes: 0,
-        views: 5,
-      },
-    ],
-  },
-  {
-    title: "คลังข้อมูล CQI",
-    icon: <FaBookOpen className="w-5 h-5 text-purple-600" />,
-    items: [
-      {
-        image:
-          "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=500&auto=format&fit=crop",
-        title: "มะเร็งไต (Renal Cell Carcinoma): รู้ไว-ตรวจพบเร็ว",
-        description: "อาการเตือนและแนวทางการตรวจรักษาตั้งแต่ระยะเริ่มต้น...",
-        likes: 5,
-        views: 52,
-      },
-      {
-        image:
-          "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=500&auto=format&fit=crop",
-        title: "โทษของบุหรี่ไฟฟ้า",
-        description: "ผลกระทบต่อระบบทางเดินหายใจและสุขภาพในระยะยาว...",
-        likes: 12,
-        views: 88,
-      },
-    ],
-  },
-];
-
+// --- Mock Comments ---
 const mockComments: CommentProps[] = [
-  {
-    author: "ธนกานต์ ขอนกลาง",
-    timeAgo: "362 วันที่แล้ว",
-    message: "บทความมีประโยชน์มากเลยค่ะ",
-  },
+  { author: "ธนกานต์ ขอนกลาง", timeAgo: "362 วันที่แล้ว", message: "บทความมีประโยชน์มากเลยค่ะ" },
   { author: "ยศวรรธน์ บุญรอด", timeAgo: "362 วันที่แล้ว", message: "ดีค่ะ" },
-  {
-    author: "เทพฤทธิ์ เกื้อแก้ว",
-    timeAgo: "362 วันที่แล้ว",
-    message: "ขอบคุณครับ",
-  },
-  {
-    author: "เตชิน รัตนวิสุทธิ์",
-    timeAgo: "363 วันที่แล้ว",
-    message: "เยี่ยมมากค่ะ",
-  },
-  {
-    author: "อัมพร หมวดไธสง",
-    timeAgo: "363 วันที่แล้ว",
-    message: "มีประโยชน์มากค่ะ",
-  },
-  {
-    author: "พงศ์ไทย สิงห์เชตอู่",
-    timeAgo: "363 วันที่แล้ว",
-    message: "เนื้อหาดีมากค่ะ",
-  },
+  { author: "เทพฤทธิ์ เกื้อแก้ว", timeAgo: "362 วันที่แล้ว", message: "ขอบคุณครับ" },
+  { author: "เตชิน รัตนวิสุทธิ์", timeAgo: "363 วันที่แล้ว", message: "เยี่ยมมากค่ะ" },
+  { author: "อัมพร หมวดไธสง", timeAgo: "363 วันที่แล้ว", message: "มีประโยชน์มากค่ะ" },
+  { author: "พงศ์ไทย สิงห์เชตอู่", timeAgo: "363 วันที่แล้ว", message: "เนื้อหาดีมากค่ะ" },
 ];
 
-// การ์ดเนื้อหาย่อย
-const ContentCard: React.FC<ContentCardProps> = ({image, title,description, likes, views,}) => (
-  <div className="card bg-base-100 shadow-xs border border-base-200 overflow-hidden text-sm flex flex-col justify-between">
-    <div>
-      <figure className="h-32 overflow-hidden bg-base-300">
-        <img src={image} alt={title} className="w-full h-full object-cover" />
-      </figure>
-      <div className="p-3">
-        <h4 className="font-semibold text-base-content line-clamp-1 mb-1">
-          {title}
-        </h4>
-        <p className="text-xs text-base-content/70 line-clamp-2">
-          {description}
-        </p>
-      </div>
-    </div>
-    <div className="px-3 pb-3 pt-1 flex items-center gap-4 text-xs text-base-content/50 border-t border-base-100 mt-2">
-      <span className="flex items-center gap-1">
-        <FaThumbsUp className="w-3 h-3" /> {likes}
-      </span>
-      <span className="flex items-center gap-1">
-        <FaEye className="w-3 h-3" /> {views}
-      </span>
-    </div>
-  </div>
-);
+// --- หมวดหมู่ใหญ่ (ดึง ArticleCard มาใช้เรนเดอร์ + Pagination) ---
+const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, items }) => {
+  // สเตตสำหรับเก็บหน้าที่กำลังแสดงผลอยู่ (เริ่มที่หน้า 0)
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 2; // แสดงทีละ 2 บทความ
 
-// หมวดหมู่ใหญ่ (Grid แบบมีกรอบรอบนอก)
-const CategorySection: React.FC<CategorySectionProps> = ({ title, icon, items }) => (
+  // คำนวณจำนวนหน้าทั้งหมด (ถ้าไม่มีข้อมูลให้มีอย่างน้อย 1 หน้า)
+  const totalPages = Math.ceil(items.length / itemsPerPage) || 1;
+
+  // ตัดแบ่งข้อมูลบทความมาแสดงเฉพาะหน้าที่เลือกอยู่
+  const displayedItems = items.slice(
+    currentPage * itemsPerPage,
+    (currentPage + 1) * itemsPerPage
+  );
+
+  return (
   <div className="flex flex-col gap-3">
-    {/* Header */}
-    <div className="flex items-center gap-2">
-      <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60">
-        {icon}
-      </div>
-      <h3 className="font-semibold text-lg text-base-content">{title}</h3>
-    </div>
+    <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-xs flex flex-col justify-between min-h-[220px]">
+      {/* ส่วนหัวหมวดหมู่ (ใช้ justify-between ดันลิงก์ไปขวาสุด) */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60">
+            {icon || <FaBookOpen className="w-5 h-5 text-purple-600" />}
+          </div>
+          <h3 className="font-semibold text-lg text-base-content">{title}</h3>
+        </div>
 
-    {/* Border Container */}
-    <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-xs">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {items.map((item, index) => (
-          <ContentCard key={index} {...item} />
-        ))}
+        {/* ลิงก์ Read more อยู่ขวาสุด */}
+        <Link 
+          href={`/categories/${id}`} 
+          className="text-xs sm:text-sm font-medium text-purple-600 hover:text-purple-700 bg-purple-300/10 hover:bg-purple-300 transition-colors flex items-center gap-1 border border-purple-300 dark:border-purple-800/60 rounded-full px-2 py-1"
+        >
+          &laquo; View More
+        </Link>
       </div>
+
+      {/* กล่องใส่บทความ */}
+      {items.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+          {displayedItems.map((item, index) => (
+            <ArticleCard
+              key={item.id ?? `article-${currentPage}-${index}`}
+              article={item}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center my-auto h-32 text-xs text-base-content/40 italic">
+          ยังไม่มีบทความในหมวดหมู่นี้
+        </div>
+      )}
 
       {/* Pagination Dots */}
-      <div className="flex justify-center gap-1.5 mt-4">
-        <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-        <span className="w-2 h-2 rounded-full bg-base-300"></span>
-        <span className="w-2 h-2 rounded-full bg-base-300"></span>
-        <span className="w-2 h-2 rounded-full bg-base-300"></span>
+      <div className="flex justify-center items-center gap-2 mt-4 pt-1">
+        {Array.from({ length: totalPages }).map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentPage(idx)}
+            aria-label={`ไปยังหน้าที่ ${idx + 1}`}
+            className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+              currentPage === idx
+                ? "w-2.5 bg-purple-600"
+                : "w-2.5 bg-base-300 hover:bg-purple-300"
+            }`}
+          />
+        ))}
       </div>
     </div>
   </div>
 );
+};
 
-// การ์ดความคิดเห็น Sidebar
+// --- การ์ดความคิดเห็น Sidebar ---
 const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
   <div className="p-3 rounded-xl border border-base-200 bg-base-100 shadow-xs flex items-start gap-3">
     <div className="avatar">
-      <div className="bg-base-200 text-base-content/60 rounded-full w-8 flex items-center justify-center">
+      <div className="bg-base-200 text-base-content/60 rounded-full w-8 h-8 flex items-center justify-center">
         <FaUser className="w-4 h-4" />
       </div>
     </div>
@@ -231,18 +136,72 @@ const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
 
 // --- Main Component ---
 export default function KMDashboard() {
+  const [categories, setCategories] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+        const [resCat, resArt] = await Promise.all([
+          fetch(`${baseUrl}/getCategories`),
+          fetch(`${baseUrl}/getArticles`),
+        ]);
+
+        const catData = await resCat.json();
+        const artData = await resArt.json();
+
+        setCategories(catData.Categories || []);
+        setArticles(artData.Articles || []);
+
+        console.log("catData.Categories: ",catData.Categories)
+        console.log("artData.Articles: ",artData.Articles)
+      } catch (err) {
+        console.error("Fetch data error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+        <p className="text-violet-600 text-sm ms-2"> กำลังโหลดข้อมูลองค์ความรู้...</p>
+      </div>
+    );
+  }
+
   return (
-    // เปลี่ยนเป็น w-full และลบ Padding ด้านข้างออก เพื่อให้ชิดขอบจอแบบ 100%
     <div className="w-full min-h-screen py-4">
       <div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-6 px-2 sm:px-4">
-        {/* ฝั่งซ้าย: 4 หมวดหมู่หลัก (3 Columns) */}
+        {/* หมวดหมู่หลัก */}
         <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {mockCategories.map((category, index) => (
-            <CategorySection key={index} {...category} />
-          ))}
+          {categories.map((category) => {
+            const matchedArticles = articles.filter(
+              (art) =>
+                String(art.categoryId) === String(category.id) &&
+                Number(art.isPublished) === 1
+            );
+
+            return (
+              <CategorySection
+                id={category.id}
+                key={category.id}
+                title={category.name}
+                icon={iconMap[category.icon]}
+                items={matchedArticles}
+              />
+            );
+          })}
         </div>
 
-        {/* ฝั่งขวา: ความคิดเห็นล่าสุด (1 Column) */}
+        {/* ความคิดเห็นล่าสุด */}
         <div className="lg:col-span-1 flex flex-col gap-4">
           <h3 className="font-semibold text-lg text-base-content px-1">
             ความคิดเห็นล่าสุด

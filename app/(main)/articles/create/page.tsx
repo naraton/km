@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import ArticleForm from "@/app/components/Articles/AritclesForm"; // Import จากพาธไฟล์ที่คุณวางไว้
+import ArticleForm from "@/app/components/Articles/AritclesForm";
 
 export default function CreateArticlePage() {
   return (
@@ -9,18 +9,18 @@ export default function CreateArticlePage() {
         {/* Header / Navigation */}
         <div className="mb-6 flex items-center justify-between">
           <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-purple-800 transition-colors bg-white px-4 py-2 rounded-full shadow-xs border border-slate-200"
+            href="/home"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-purple-800 transition-colors bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200"
           >
             ← ย้อนกลับหน้าหลัก
           </Link>
-          <span className="text-sm font-bold px-3 py-1.5 transition-colors bg-white rounded-full shadow-xs border border-slate-200 text-purple-800">
+          <span className="text-sm font-bold px-3 py-1.5 transition-colors bg-white rounded-full shadow-lg border border-slate-200 text-purple-800">
             TCH KM - ARTICLE CREATOR
           </span>
         </div>
 
         {/* Main Card Container */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-xs border border-slate-200">
+        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-lg border border-slate-200">
           <div className="mb-8 pb-4 border-b border-slate-100">
             <h1 className="text-2xl font-bold text-violet-900">
               สร้างบทความ / องค์ความรู้ใหม่

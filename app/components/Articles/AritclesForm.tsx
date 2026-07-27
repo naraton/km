@@ -18,7 +18,59 @@ export default function ArticleForm({
   initialData,
 }: ArticleFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  //ตรวจสอบสิทธิ์การเข้าถึงหน้าเว็บ
+  useEffect(() => {
+    // 1. ดึงข้อมูลเบื้องต้นจาก localStorage (ใส่ try-catch กัน Error)
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (e) {
+      console.error("Failed to parse user from localStorage", e);
+    }
+
+    const checkPermission = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        router.push("/no-permission");
+        return;
+      }
+
+      try {
+        const meRes = await fetch("/api/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!meRes.ok) {
+          router.push("/no-permission");
+          return;
+        }
+
+        const me = await meRes.json();
+        const roleNames = me.roles || [];
+
+        if (!roleNames.includes("KM")) {
+          router.push("/no-permission");
+          return;
+        }
+
+        // ✅ อัปเดต user state ด้วยข้อมูลที่ได้จริงจาก API เพื่อความถูกต้องแม่นยำที่สุด
+        setUser(me);
+
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        router.push("/no-permission");
+      }
+    };
+
+    checkPermission();
+  }, [router]);
 
   // Drag & Drop State สำหรับรูปภาพ
   const [isDragging, setIsDragging] = useState(false);
@@ -113,12 +165,12 @@ export default function ArticleForm({
   // --- [ระบบจัดการไฟล์รูปภาพ] ---
   const processFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      toast.error("รองรับเฉพาะไฟล์รูปภาพ (PNG, JPG, WebP ฯลฯ) เท่านั้นครับ");
+      toast.error("รองรับเฉพาะไฟล์รูปภาพ (PNG, JPG, WebP ฯลฯ) เท่านั้น");
       return;
     }
 
     if (file.size > 1 * 1024 * 1024) {
-      toast.error("ขนาดไฟล์รูปภาพต้องไม่เกิน 1MB ครับ");
+      toast.error("ขนาดไฟล์รูปภาพต้องไม่เกิน 1MB");
       return;
     }
 
@@ -173,12 +225,12 @@ export default function ArticleForm({
   // --- [ระบบจัดการไฟล์ PDF] ---
   const processPdfFile = (file: File) => {
     if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
-      toast.error("กรุณาอัปโหลดเฉพาะไฟล์ PDF เท่านั้นครับ");
+      toast.error("กรุณาอัปโหลดเฉพาะไฟล์ PDF เท่านั้น");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("ขนาดไฟล์ PDF ต้องไม่เกิน 10MB ครับ");
+      toast.error("ขนาดไฟล์ PDF ต้องไม่เกิน 10MB");
       return;
     }
 
@@ -309,6 +361,8 @@ export default function ArticleForm({
     title: "หัวข้อบทความ",
     description: "คำอธิบายสั้น",
     implementation: "การนำไปใช้งาน/การขยายผล",
+    owner: "เจ้าของผลงาน",
+    coverImage: "รูปหน้าปก",
   };
 
   const focusField = (id: string) => {
@@ -348,6 +402,7 @@ export default function ArticleForm({
   };
 
   // Submit
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -383,6 +438,7 @@ export default function ArticleForm({
         return typeof window !== "undefined" && val instanceof File;
       };
 
+      // 1. วนลูปใส่ข้อมูลจาก formData
       Object.entries(formData).forEach(([key, value]) => {
         if (value === null || value === undefined) return;
 
@@ -395,8 +451,12 @@ export default function ArticleForm({
         }
       });
 
-      // แนบ userId เพิ่มเติมตามต้องการ
-      formDataToSend.append("userId", "1");
+      // 2. อัปเดต/การันตี userId (กรณีใน formData ไม่มี หรือต้องการ override ด้วย ID ล่าสุด)
+      if (user?.id) {
+        formDataToSend.set("userId", String(user.id)); 
+      }
+
+      // 3. แนบ articleId ถ้าอยู่ในโหมด Edit
       if (isEdit && articleId) {
         formDataToSend.append("articleId", String(articleId));
       }
@@ -416,7 +476,7 @@ export default function ArticleForm({
           { id: toastId }
         );
 
-        router.push("/");
+        router.push("/home");
 
       } else {
         toast.error(
@@ -721,6 +781,7 @@ export default function ArticleForm({
           เจ้าของผลงาน <span className="text-red-500">*</span>
         </label>
         <input
+          id="owner"
           type="text"
           name="owner"
           placeholder="ชื่อ-นามสกุล"
@@ -749,7 +810,7 @@ export default function ArticleForm({
       {/* 7. Image Upload (Drag & Drop) */}
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-          รูปภาพปก
+          รูปภาพหน้าปก <span className="text-red-500">*</span>
         </label>
 
         <div
@@ -762,6 +823,7 @@ export default function ArticleForm({
             }`}
         >
           <input
+            id="coverImage"
             type="file"
             accept="image/*"
             onChange={handleFileInput}
