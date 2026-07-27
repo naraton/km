@@ -58,60 +58,65 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
   );
 
   return (
-  <div className="flex flex-col gap-3">
-    <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-xs flex flex-col justify-between min-h-[220px]">
-      {/* ส่วนหัวหมวดหมู่ (ใช้ justify-between ดันลิงก์ไปขวาสุด) */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60">
-            {icon || <FaBookOpen className="w-5 h-5 text-purple-600" />}
+    <div className="flex flex-col gap-3">
+      <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-xs flex flex-col justify-between min-h-[220px]">
+        {/* ส่วนหัวหมวดหมู่ (ใช้ justify-between ดันลิงก์ไปขวาสุด) */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60">
+              {icon || <FaBookOpen className="w-5 h-5 text-purple-600" />}
+            </div>
+            <h3 className="font-semibold text-lg text-base-content">{title}</h3>
           </div>
-          <h3 className="font-semibold text-lg text-base-content">{title}</h3>
+
+          {/* ลิงก์ Read more อยู่ขวาสุด */}
+          <Link
+            href={`/categories/${id}`}
+            className="text-xs sm:text-sm font-medium text-purple-600 hover:text-purple-700 bg-purple-300/10 hover:bg-purple-300 transition-colors flex items-center gap-1 border border-purple-300 dark:border-purple-800/60 rounded-full px-2 py-1"
+          >
+            &laquo; View More
+          </Link>
         </div>
 
-        {/* ลิงก์ Read more อยู่ขวาสุด */}
-        <Link 
-          href={`/categories/${id}`} 
-          className="text-xs sm:text-sm font-medium text-purple-600 hover:text-purple-700 bg-purple-300/10 hover:bg-purple-300 transition-colors flex items-center gap-1 border border-purple-300 dark:border-purple-800/60 rounded-full px-2 py-1"
-        >
-          &laquo; View More
-        </Link>
-      </div>
+        {/* กล่องใส่บทความ */}
+        {items.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+            {displayedItems.map((item, index) => (
+              <Link
+                href={`/articlesView/${item.id}`}
+                key={item.id}
+                className="block h-full"
+              >
+                <ArticleCard
+                  key={item.id ?? `article-${currentPage}-${index}`}
+                  article={item}
+                />
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center my-auto h-32 text-xs text-base-content/40 italic">
+            ยังไม่มีบทความในหมวดหมู่นี้
+          </div>
+        )}
 
-      {/* กล่องใส่บทความ */}
-      {items.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-          {displayedItems.map((item, index) => (
-            <ArticleCard
-              key={item.id ?? `article-${currentPage}-${index}`}
-              article={item}
+        {/* Pagination Dots */}
+        <div className="flex justify-center items-center gap-2 mt-4 pt-1">
+          {Array.from({ length: totalPages }).map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentPage(idx)}
+              aria-label={`ไปยังหน้าที่ ${idx + 1}`}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${currentPage === idx
+                ? "w-2.5 bg-purple-600"
+                : "w-2.5 bg-base-300 hover:bg-purple-300"
+                }`}
             />
           ))}
         </div>
-      ) : (
-        <div className="flex items-center justify-center my-auto h-32 text-xs text-base-content/40 italic">
-          ยังไม่มีบทความในหมวดหมู่นี้
-        </div>
-      )}
-
-      {/* Pagination Dots */}
-      <div className="flex justify-center items-center gap-2 mt-4 pt-1">
-        {Array.from({ length: totalPages }).map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => setCurrentPage(idx)}
-            aria-label={`ไปยังหน้าที่ ${idx + 1}`}
-            className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-              currentPage === idx
-                ? "w-2.5 bg-purple-600"
-                : "w-2.5 bg-base-300 hover:bg-purple-300"
-            }`}
-          />
-        ))}
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 // --- การ์ดความคิดเห็น Sidebar ---
@@ -156,8 +161,6 @@ export default function KMDashboard() {
         setCategories(catData.Categories || []);
         setArticles(artData.Articles || []);
 
-        console.log("catData.Categories: ",catData.Categories)
-        console.log("artData.Articles: ",artData.Articles)
       } catch (err) {
         console.error("Fetch data error:", err);
       } finally {

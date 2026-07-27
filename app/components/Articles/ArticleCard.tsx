@@ -1,4 +1,5 @@
 import { FaThumbsUp, FaEye } from "react-icons/fa";
+import Link from "next/link";
 
 export interface Article {
   id: number | string;
@@ -23,7 +24,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 border border-slate-200 flex flex-col justify-between h-full">
-      <div>
+      <div className="group cursor-pointer" >
         {/* ส่วนรูปภาพปก */}
         <div className="h-36 sm:h-40 w-full overflow-hidden bg-slate-100">
           <img

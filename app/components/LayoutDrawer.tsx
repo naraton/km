@@ -357,7 +357,7 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
 
       setPassSuccess("เปลี่ยนรหัสผ่านเรียบร้อยแล้ว!");
       setPassData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      
+
       // ปิด Modal อัตโนมัติหลังเปลี่ยนสำเร็จ 2 วินาที
       setTimeout(() => {
         setChangePassModal(false);
@@ -405,7 +405,6 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
   return (
     <div className="drawer lg:drawer-open bg-slate-50/50">
       <input id="my-drawer" type="checkbox" className="drawer-toggle" />
-
       <div className="drawer-content flex flex-col min-h-screen bg-white/20">
         <header
           className="navbar fixed top-0 left-0 w-full z-40 bg-white/85 backdrop-blur-xl border-b border-gray-200/60 transition-all duration-300"
@@ -413,13 +412,15 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
         >
           {/* ✅ Mobile Header */}
           <div className="flex items-center justify-between z-15 lg:hidden w-full gap-1">
-            <div className="flex items-center shrink-0">
+            <div className="flex items-center shrink-0 cursor-pointer"
+              onClick={() => router.push("/home")}
+            >
               <div className="relative flex-shrink-0 bg-white rounded-2xl p-1 shadow-lg border border-slate-300">
-                <Image 
-                  src={logo} 
-                  alt="TCH KM Logo" 
-                  width={40} 
-                  height={40} 
+                <Image
+                  src={logo}
+                  alt="TCH KM Logo"
+                  width={40}
+                  height={40}
                   className="object-contain"
                 />
               </div>
@@ -450,13 +451,15 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
 
           {/* ✅ Desktop Header */}
           <div className="hidden lg:flex items-center justify-between w-full px-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer"
+              onClick={() => router.push("/home")}
+            >
               <div className="relative flex-shrink-0 bg-white rounded-2xl p-1 border border-slate-300 shadow-lg">
-                <Image 
-                  src={logo} 
-                  alt="TCH KM Logo" 
-                  width={45} 
-                  height={45} 
+                <Image
+                  src={logo}
+                  alt="TCH KM Logo"
+                  width={45}
+                  height={45}
                   className="object-contain"
                 />
               </div>
@@ -464,7 +467,7 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
               <div className="flex flex-col justify-center leading-tight">
                 <span className="text-xl font-black tracking-tight text-violet-700">
                   ศูนย์รวมองค์ความรู้ (Knowledge Management : KM)
-                </span> 
+                </span>
                 <span className="text-base font-medium text-slate-600 mt-0.5">
                   โรงพยาบาลธัญญารักษ์เชียงใหม่
                 </span>
@@ -480,7 +483,7 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
                 />
                 <HiOutlineMagnifyingGlass className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
-              
+
               <AiFillSettings {...settingsProps} />
             </div>
           </div>

@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ArticleCard, { Article } from "@/app/components/Articles/ArticleCard";
-import { 
-  FaArrowLeft, 
-  FaSearch, 
-  FaBookOpen, 
+import {
+  FaArrowLeft,
+  FaSearch,
+  FaBookOpen,
   FaLayerGroup,
   FaSortAmountDown
 } from "react-icons/fa";
@@ -95,9 +95,9 @@ export default function CategoryDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
-        <p className="text-purple-600 text-sm font-medium">กำลังโหลดคลังความรู้...</p>
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+        <p className="text-violet-600 text-sm ms-2"> กำลังโหลดข้อมูลองค์ความรู้...</p>
       </div>
     );
   }
@@ -153,23 +153,71 @@ export default function CategoryDetailPage() {
               setSearchQuery(e.target.value);
               setCurrentPage(1); // รีเซ็ตไปหน้า 1 เมื่อค้นหา
             }}
-            className="w-full text-xs pl-9 pr-4 py-2 rounded-lg border border-base-300 bg-base-200/50 focus:outline-none focus:border-purple-500 transition-all"
+            className="w-full text-xs pl-9 pr-4 py-2 rounded-full border border-base-300 bg-base-200/50 focus:outline-none focus:border-purple-500 transition-all"
           />
         </div>
 
         {/* การเรียงลำดับ */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          <span className="text-xs text-base-content/60 flex items-center gap-1">
-            <FaSortAmountDown className="w-3 h-3" /> เรียงตาม:
-          </span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="text-xs border border-base-300 rounded-lg px-3 py-2 bg-base-100 focus:outline-none focus:border-purple-500"
-          >
-            <option value="latest">ล่าสุด</option>
-            <option value="popular">ยอดนิยม (Views)</option>
-          </select>
+        <div className="flex items-center gap-3 w-60 justify-end">
+          <div className="flex items-center gap-1 text-slate-500 text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
+            <FaSortAmountDown className="w-3 h-3" />
+            <span>เรียงตาม:</span>
+          </div>
+
+          <div className="dropdown w-full">
+            {/* ปุ่มกดเปิด Dropdown (แสดงค่าปัจจุบันที่เลือก) */}
+            <div
+              tabIndex={0}
+              role="button"
+              className="w-full p-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-slate-800 hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer"
+            >
+              <span>
+                {sortBy === "popular" ? "ยอดนิยม (Views)" : "ล่าสุด"}
+              </span>
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            {/* รายการตัวเลือก */}
+            <ul tabIndex={0} className="dropdown-content menu bg-white rounded-2xl w-full p-2 shadow-lg border border-purple-100 text-slate-700 mt-1 text-xs z-[100] space-y-1">
+
+              {/* ตัวเลือก: ล่าสุด */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy("latest");
+                    (document.activeElement as HTMLElement)?.blur();
+                  }}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl transition-all ${sortBy === "latest"
+                    ? "bg-purple-600 text-white"
+                    : "hover:bg-purple-50 hover:text-purple-700"
+                    }`}
+                >
+                  ล่าสุด
+                </button>
+              </li>
+
+              {/* ตัวเลือก: ยอดนิยม */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy("popular");
+                    (document.activeElement as HTMLElement)?.blur();
+                  }}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl transition-all ${sortBy === "popular"
+                    ? "bg-purple-600 text-white"
+                    : "hover:bg-purple-50 hover:text-purple-700"
+                    }`}
+                >
+                  ยอดนิยม (Views)
+                </button>
+              </li>
+
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -177,10 +225,13 @@ export default function CategoryDetailPage() {
       {paginatedArticles.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedArticles.map((article, index) => (
-            <ArticleCard
+            <Link
+              href={`/articlesView/${article.id}`}
               key={article.id ?? `cat-article-${index}`}
-              article={article}
-            />
+              className="block h-full"
+            >
+              <ArticleCard article={article} />
+            </Link>
           ))}
         </div>
       ) : (
@@ -203,7 +254,7 @@ export default function CategoryDetailPage() {
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1.5 text-xs rounded-lg border border-base-300 bg-base-100 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-base-200 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg border border-base-300 bg-base-100 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-base-200 transition-colors cursor-pointer"
           >
             ก่อนหน้า
           </button>
@@ -215,11 +266,10 @@ export default function CategoryDetailPage() {
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-8 h-8 text-xs rounded-lg font-medium transition-all ${
-                    currentPage === pageNum
-                      ? "bg-purple-600 text-white shadow-xs"
-                      : "bg-base-100 border border-base-300 hover:bg-base-200"
-                  }`}
+                  className={`w-8 h-8 text-xs rounded-lg font-medium transition-all ${currentPage === pageNum
+                    ? "bg-purple-600 text-white shadow-xs"
+                    : "bg-base-100 border border-base-300 hover:bg-base-200"
+                    }`}
                 >
                   {pageNum}
                 </button>
@@ -230,13 +280,12 @@ export default function CategoryDetailPage() {
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="px-3 py-1.5 text-xs rounded-lg border border-base-300 bg-base-100 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-base-200 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg border border-base-300 bg-base-100 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-base-200 transition-colors cursor-pointer"
           >
             ถัดไป
           </button>
         </div>
       )}
-
     </div>
   );
 }
