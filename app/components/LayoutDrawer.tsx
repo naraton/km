@@ -100,7 +100,7 @@ function AiFillSettings({
                   className="flex items-center gap-2 py-2 w-full text-left"
                 >
                   <LuNotebookPen className="w-4 h-4 text-green-500" />
-                  <span className="text-green-500">เขียนบทความใหม่</span>
+                  <span className="text-green-500 text-xs">เขียนบทความใหม่</span>
                 </Link>
               </li>
 
@@ -110,7 +110,7 @@ function AiFillSettings({
                   className="flex items-center gap-2 py-2 w-full text-left"
                 >
                   <FaBook className="w-4 h-4 text-blue-500" />
-                  <span className="text-blue-500">บทความของฉัน</span>
+                  <span className="text-blue-500 text-xs">บทความของฉัน</span>
                 </Link>
               </li>
 
@@ -126,7 +126,7 @@ function AiFillSettings({
                   className="flex items-center gap-2 py-2 w-full text-left"
                 >
                   <HiOutlineArrowPath className="w-4 h-4 text-orange-500" />
-                  <span className="text-orange-500">เปลี่ยนรหัสผ่าน</span>
+                  <span className="text-orange-500 text-xs">เปลี่ยนรหัสผ่าน</span>
                 </button>
               </li>
 
@@ -137,7 +137,7 @@ function AiFillSettings({
                   className="flex items-center gap-2 py-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 w-full text-left"
                 >
                   <HiOutlineArrowRightStartOnRectangle className="w-4 h-4" />
-                  <span>ออกจากระบบ</span>
+                  <span className="text-xs">ออกจากระบบ</span>
                 </button>
               </li>
             </>
