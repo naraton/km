@@ -32,26 +32,32 @@ interface CommentProps {
   message: string;
 }
 
-// --- Mock Comments ---
-const mockComments: CommentProps[] = [
-  { author: "ธนกานต์ ขอนกลาง", timeAgo: "362 วันที่แล้ว", message: "บทความมีประโยชน์มากเลยค่ะ" },
-  { author: "ยศวรรธน์ บุญรอด", timeAgo: "362 วันที่แล้ว", message: "ดีค่ะ" },
-  { author: "เทพฤทธิ์ เกื้อแก้ว", timeAgo: "362 วันที่แล้ว", message: "ขอบคุณครับ" },
-  { author: "เตชิน รัตนวิสุทธิ์", timeAgo: "363 วันที่แล้ว", message: "เยี่ยมมากค่ะ" },
-  { author: "อัมพร หมวดไธสง", timeAgo: "363 วันที่แล้ว", message: "มีประโยชน์มากค่ะ" },
-  { author: "พงศ์ไทย สิงห์เชตอู่", timeAgo: "363 วันที่แล้ว", message: "เนื้อหาดีมากค่ะ" },
-];
+// --- ฟังก์ชันคำนวณระยะเวลา (Relative Time) ---
+const formatTimeAgo = (dateString: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "เมื่อสักครู่";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} นาทีที่แล้ว`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} ชั่วโมงที่แล้ว`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) return `${diffInDays} วันที่แล้ว`;
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) return `${diffInMonths} เดือนที่แล้ว`;
+  return `${Math.floor(diffInDays / 365)} ปีที่แล้ว`;
+};
 
 // --- หมวดหมู่ใหญ่ (ดึง ArticleCard มาใช้เรนเดอร์ + Pagination) ---
 const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, items }) => {
-  // สเตตสำหรับเก็บหน้าที่กำลังแสดงผลอยู่ (เริ่มที่หน้า 0)
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 2; // แสดงทีละ 2 บทความ
+  const itemsPerPage = 2;
 
-  // คำนวณจำนวนหน้าทั้งหมด (ถ้าไม่มีข้อมูลให้มีอย่างน้อย 1 หน้า)
   const totalPages = Math.ceil(items.length / itemsPerPage) || 1;
 
-  // ตัดแบ่งข้อมูลบทความมาแสดงเฉพาะหน้าที่เลือกอยู่
   const displayedItems = items.slice(
     currentPage * itemsPerPage,
     (currentPage + 1) * itemsPerPage
@@ -59,8 +65,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-xs flex flex-col justify-between min-h-[220px]">
-        {/* ส่วนหัวหมวดหมู่ (ใช้ justify-between ดันลิงก์ไปขวาสุด) */}
+      <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-lg flex flex-col justify-between min-h-[220px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60">
@@ -69,7 +74,6 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
             <h3 className="font-semibold text-lg text-base-content">{title}</h3>
           </div>
 
-          {/* ลิงก์ Read more อยู่ขวาสุด */}
           <Link
             href={`/categories/${id}`}
             className="text-xs sm:text-sm font-medium text-purple-600 hover:text-purple-700 bg-purple-300/10 hover:bg-purple-300 transition-colors flex items-center gap-1 border border-purple-300 dark:border-purple-800/60 rounded-full px-2 py-1"
@@ -78,7 +82,6 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
           </Link>
         </div>
 
-        {/* กล่องใส่บทความ */}
         {items.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
             {displayedItems.map((item, index) => (
@@ -100,17 +103,17 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
           </div>
         )}
 
-        {/* Pagination Dots */}
         <div className="flex justify-center items-center gap-2 mt-4 pt-1">
           {Array.from({ length: totalPages }).map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentPage(idx)}
               aria-label={`ไปยังหน้าที่ ${idx + 1}`}
-              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${currentPage === idx
-                ? "w-2.5 bg-purple-600"
-                : "w-2.5 bg-base-300 hover:bg-purple-300"
-                }`}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                currentPage === idx
+                  ? "w-2.5 bg-purple-600"
+                  : "w-2.5 bg-base-300 hover:bg-purple-300"
+              }`}
             />
           ))}
         </div>
@@ -121,7 +124,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
 
 // --- การ์ดความคิดเห็น Sidebar ---
 const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
-  <div className="p-3 rounded-xl border border-base-200 bg-base-100 shadow-xs flex items-start gap-3">
+  <div className="p-3 rounded-xl border border-base-200 bg-base-100 shadow-lg flex items-start gap-3">
     <div className="avatar">
       <div className="bg-base-200 text-base-content/60 rounded-full w-8 h-8 flex items-center justify-center">
         <FaUser className="w-4 h-4" />
@@ -134,7 +137,7 @@ const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
         </span>
         <span className="text-[10px] text-base-content/40">{timeAgo}</span>
       </div>
-      <p className="text-base-content/80">{message}</p>
+      <p className="text-base-content/80 break-words">{message}</p>
     </div>
   </div>
 );
@@ -143,32 +146,45 @@ const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
 export default function KMDashboard() {
   const [categories, setCategories] = useState<any[]>([]);
   const [articles, setArticles] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
-        const [resCat, resArt] = await Promise.all([
+        const [resCat, resArt, resCom] = await Promise.all([
           fetch(`${baseUrl}/getCategories`),
           fetch(`${baseUrl}/getArticles`),
+          fetch(`${baseUrl}/getLatestComments`),
         ]);
 
         const catData = await resCat.json();
         const artData = await resArt.json();
+        const comData = resCom.ok ? await resCom.json() : [];
 
-        setCategories(catData.Categories || []);
-        setArticles(artData.Articles || []);
-
+        if (isMounted) {
+          setCategories(catData.Categories || []);
+          setArticles(artData.Articles || []);
+          setComments(comData.Comments || comData || []);
+        }
       } catch (err) {
         console.error("Fetch data error:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -210,9 +226,20 @@ export default function KMDashboard() {
             ความคิดเห็นล่าสุด
           </h3>
           <div className="flex flex-col gap-2.5">
-            {mockComments.map((comment, index) => (
-              <CommentItem key={index} {...comment} />
-            ))}
+            {comments.length > 0 ? (
+              comments.map((comment: any, index: number) => (
+                <CommentItem
+                  key={comment.id || index}
+                  author={comment.userName || comment.author || "ผู้ใช้งานทั่วไป"}
+                  timeAgo={formatTimeAgo(comment.createdAt || comment.created_at)}
+                  message={comment.message}
+                />
+              ))
+            ) : (
+              <div className="text-xs text-base-content/40 italic text-center py-4 bg-base-100 rounded-xl border border-base-200">
+                ยังไม่มีความคิดเห็น
+              </div>
+            )}
           </div>
         </div>
       </div>
