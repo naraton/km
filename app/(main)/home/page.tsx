@@ -138,6 +138,14 @@ const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
         <span className="text-[10px] text-base-content/40">{timeAgo}</span>
       </div>
       <p className="text-base-content/80 break-words">{message}</p>
+      <div className="flex justify-end mt-1">
+        <button 
+          //onClick={() => commentView(item.id)} 
+          className="btn btn-xs text-xs bg-transparent hover:bg-transparent text-violet-600 hover:text-violet-700 border border-violet-300 bg-violet-100 dark:bg-violet-900/20 dark:border-violet-800 dark:text-violet-400 dark:hover:text-violet-300"
+        >
+          View
+        </button>
+      </div>
     </div>
   </div>
 );
