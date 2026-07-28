@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "../RichTextEditor";
 import toast, { Toaster } from "react-hot-toast";
+import { table } from "console";
 
 // 1. เพิ่ม Type สำหรับ Props
 interface ArticleFormProps {
@@ -11,6 +12,37 @@ interface ArticleFormProps {
   articleId?: string; // จำเป็นเมื่อ mode เป็น 'edit'
   initialData?: any;  // ข้อมูลเดิมสำหรับเติมใส่ช่องกรอกตอน Edit
 }
+
+// Helper Function สำหรับสร้าง Full URL ตามประเภทไฟล์
+const getFullUrl = (path: string | null | undefined, type: "image" | "pdf") => {
+  if (!path) return "";
+
+  // ถ้าเป็น Data URL (Base64) หรือมี http/https ครบอยู่แล้ว ให้ใช้ค่านั้นได้เลย
+  if (
+    path.startsWith("data:") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://")
+  ) {
+    return path;
+  }
+
+  // 1. เลือก Base URL ตามประเภทไฟล์จาก .env
+  const baseUrl = type === "image"
+    ? process.env.NEXT_PUBLIC_coverImage
+    : process.env.NEXT_PUBLIC_pdfContent;
+
+  if (!baseUrl) {
+    console.error(`Missing NEXT_PUBLIC_${type === "image" ? "coverImage" : "pdfContent"} in .env`);
+    return path;
+  }
+
+  // 2. ดึงเฉพาะชื่อไฟล์ออกมา (ตัด path โฟลเดอร์เดิมออกถ้าติดมาด้วย)
+  const fileName = path.split("/").pop() || path;
+
+  // 3. รวม Base URL เข้ากับชื่อไฟล์ (เช่น http://172.18.0.112/KM/coverImage/1785138033_6a670b7171357.jpg)
+  const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  return `${cleanBaseUrl}/${fileName}`;
+};
 
 export default function ArticleForm({
   mode,
@@ -20,9 +52,8 @@ export default function ArticleForm({
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
 
-  //ตรวจสอบสิทธิ์การเข้าถึงหน้าเว็บ
+  // ตรวจสอบสิทธิ์การเข้าถึงหน้าเว็บ
   useEffect(() => {
-    // 1. ดึงข้อมูลเบื้องต้นจาก localStorage (ใส่ try-catch กัน Error)
     try {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
@@ -60,9 +91,7 @@ export default function ArticleForm({
           return;
         }
 
-        // ✅ อัปเดต user state ด้วยข้อมูลที่ได้จริงจาก API เพื่อความถูกต้องแม่นยำที่สุด
         setUser(me);
-
       } catch (err) {
         console.error("Auth check failed:", err);
         router.push("/no-permission");
@@ -74,11 +103,26 @@ export default function ArticleForm({
 
   // Drag & Drop State สำหรับรูปภาพ
   const [isDragging, setIsDragging] = useState(false);
-  // Drag & Drop State สำหรับ PDF (แยกแยกต่างหาก)
+  // Drag & Drop State สำหรับ PDF
   const [isPdfDragging, setIsPdfDragging] = useState(false);
 
   // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    categoryId: string;
+    isPublished: number;
+    title: string;
+    tag: string;
+    description: string;
+    mission: string;
+    workGroup: string;
+    job: string;
+    owner: string;
+    implementation: string;
+    coverImage: File | string | null;
+    content: string;
+    pdfContent: File | string | null;
+    userId: string;
+  }>({
     categoryId: "",
     isPublished: 1,
     title: "",
@@ -89,9 +133,9 @@ export default function ArticleForm({
     job: "",
     owner: "",
     implementation: "",
-    coverImage: null as File | null,
+    coverImage: null,
     content: "",
-    pdfContent: null as File | null,
+    pdfContent: null,
     userId: "1",
   });
 
@@ -111,7 +155,7 @@ export default function ArticleForm({
     dataUrl: string;
   } | null>(null);
 
-  // 2. เติมข้อมูลเดิมเข้า Form เมื่ออยู่ในโหมด Edit
+  // 2. 🟢 เติมข้อมูลเดิมเข้า Form เมื่ออยู่ในโหมด Edit (ปรับปรุงการดึง URL)
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setFormData({
@@ -125,29 +169,39 @@ export default function ArticleForm({
         job: initialData.job || "",
         owner: initialData.owner || "",
         implementation: initialData.implementation || "",
-        coverImage: initialData.coverImage || "",
+        coverImage: initialData.coverImage || null,
         content: initialData.content || "",
-        pdfContent: initialData.pdfContent || "",
+        pdfContent: initialData.pdfContent || null,
         userId: String(initialData.userId || "1"),
       });
 
-      // ถ้ามีรูปเดิมแสดงพรีวิว
+      // 🟢 จัดการ Preview รูปภาพเดิม (ระบุ type เป็น "image")
       if (initialData.coverImage) {
+        const fullImageUrl = getFullUrl(initialData.coverImage, "image");
+        const fileName = typeof initialData.coverImage === "string"
+          ? initialData.coverImage.split("/").pop() || "รูปภาพปกเดิม"
+          : "รูปภาพปกเดิม";
+
         setSelectedFile({
-          name: "รูปภาพปกเดิมที่อัปโหลดไว้",
-          size: "-",
+          name: fileName,
+          size: "ไฟล์เดิมในระบบ",
           type: "image/*",
-          dataUrl: initialData.coverImage,
+          dataUrl: fullImageUrl, // จะได้ http://172.18.0.112/KM/coverImage/1785138033_6a670b7171357.jpg
         });
       }
 
-      // ถ้ามีไฟล์ PDF เดิมแสดงพรีวิว
+      // 🟢 จัดการ Preview PDF เดิม (ระบุ type เป็น "pdf")
       if (initialData.pdfContent) {
+        const fullPdfUrl = getFullUrl(initialData.pdfContent, "pdf");
+        const pdfName = typeof initialData.pdfContent === "string"
+          ? initialData.pdfContent.split("/").pop() || "เอกสาร PDF เดิม"
+          : "เอกสาร PDF เดิม";
+
         setSelectedPdf({
-          name: "เอกสาร PDF เดิมที่อัปโหลดไว้",
-          size: "-",
+          name: pdfName,
+          size: "ไฟล์เดิมในระบบ",
           type: "application/pdf",
-          dataUrl: initialData.pdfContent,
+          dataUrl: fullPdfUrl, // จะได้ http://172.18.0.112/KM/pdfContent/sample.pdf
         });
       }
     }
@@ -279,17 +333,23 @@ export default function ArticleForm({
 
   const removePdfFile = () => {
     setSelectedPdf(null);
-    setFormData((prev) => ({ ...prev, pdfContent: null }));
+    setFormData((prev) => ({
+      ...prev,
+      pdfContent: "", // 👈 เคลียร์ค่าใน formData ให้เป็น string ว่าง (หรือ null)
+    }));
   };
-
   // --- Fetch Master Data --------
   const [categoriesData, setCategoriesData] = useState<any>(null);
   const [missionData, setMissionData] = useState<any>(null);
 
   const getData = async () => {
     try {
-      const resCategories = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/getCategories`);
-      const resMission = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Depart`);
+      const resCategories = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/getCategories`
+      );
+      const resMission = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/Depart`
+      );
 
       const categoryData = await resCategories.json();
       const missionDataJson = await resMission.json();
@@ -307,7 +367,6 @@ export default function ArticleForm({
 
   // ดึงกลุ่มงาน เมื่อ formData.mission เปลี่ยน
   const [workGroupsData, setWorkGroupsData] = useState<any>(null);
-
   useEffect(() => {
     const getWorkGroups = async () => {
       if (!formData.mission) {
@@ -332,7 +391,6 @@ export default function ArticleForm({
 
   // ดึงงาน เมื่อ formData.workGroup เปลี่ยน
   const [jobsData, setJobsData] = useState<any>(null);
-
   useEffect(() => {
     const getJobs = async () => {
       if (!formData.workGroup) {
@@ -375,10 +433,7 @@ export default function ArticleForm({
       }
       el.focus({ preventScroll: true });
 
-      // 1. remove border
       el.classList.remove("border-slate-200");
-
-      // 2. add red border
       el.classList.add(
         "!border-2",
         "!border-red-500",
@@ -387,7 +442,6 @@ export default function ArticleForm({
         "bg-red-50/20"
       );
 
-      // 3. Remove after 3 seconds
       setTimeout(() => {
         el.classList.remove(
           "!border-2",
@@ -396,7 +450,7 @@ export default function ArticleForm({
           "ring-red-200",
           "bg-red-50/20"
         );
-        el.classList.add("border-slate-200"); // คืนสีขอบเดิม
+        el.classList.add("border-slate-200");
       }, 3000);
     }
   };
@@ -438,11 +492,20 @@ export default function ArticleForm({
         return typeof window !== "undefined" && val instanceof File;
       };
 
-      // 1. วนลูปใส่ข้อมูลจาก formData
+      // 🟢 วนลูปจัดการส่งข้อมูลเข้า FormData
       Object.entries(formData).forEach(([key, value]) => {
         if (value === null || value === undefined) return;
 
         if (isFile(value)) {
+          // ถ้าเป็นไฟล์ใหม่ที่เพิ่งเลือก (File Object)
+          formDataToSend.append(key, value);
+        } else if (key === "coverImage" || key === "pdfContent") {
+          // 💡 ถ้าเป็นเรื่องไฟล์ แต่ไม่ใช่ File Object (แปลว่าไม่ได้เปลี่ยนไฟล์ใหม่)
+          // ไม่ต้องส่ง หรือถ้าส่งไปฝั่ง Laravel จะมองเป็น String ปกติ
+          if (typeof value === "string" && value.trim() !== "") {
+            formDataToSend.append(key, value);
+          }
+        } else if (typeof value === "string") {
           formDataToSend.append(key, value);
         } else if (typeof value === "object") {
           formDataToSend.append(key, JSON.stringify(value));
@@ -451,17 +514,15 @@ export default function ArticleForm({
         }
       });
 
-      // 2. อัปเดต/การันตี userId (กรณีใน formData ไม่มี หรือต้องการ override ด้วย ID ล่าสุด)
       if (user?.id) {
-        formDataToSend.set("userId", String(user.id)); 
+        formDataToSend.set("userId", String(user.id));
       }
 
-      // 3. แนบ articleId ถ้าอยู่ในโหมด Edit
       if (isEdit && articleId) {
         formDataToSend.append("articleId", String(articleId));
       }
 
-      //console.table(Array.from(formDataToSend.entries()));
+      //console.table(Object.fromEntries(formDataToSend.entries()));
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -476,8 +537,11 @@ export default function ArticleForm({
           { id: toastId }
         );
 
-        router.push("/home");
-
+        if (mode === "edit") {
+          router.push("/my-articles");
+        } else {
+          router.push("/home");
+        }
       } else {
         toast.error(
           `เกิดข้อผิดพลาด: ${data.message || data.error || "ไม่สามารถทำรายการได้"}`,
@@ -486,7 +550,6 @@ export default function ArticleForm({
 
         console.error(data);
       }
-
     } catch (error) {
       console.error(error);
       toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", { id: toastId });

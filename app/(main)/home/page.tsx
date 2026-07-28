@@ -30,6 +30,7 @@ interface CommentProps {
   author: string;
   timeAgo: string;
   message: string;
+  articleId: string;
 }
 
 // --- ฟังก์ชันคำนวณระยะเวลา (Relative Time) ---
@@ -66,19 +67,23 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
   return (
     <div className="flex flex-col gap-3">
       <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-lg flex flex-col justify-between min-h-[220px]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60">
+        <div className="flex items-center justify-between gap-2">
+          {/* ฝั่งซ้าย: ใส่ min-w-0 เพื่อให้หัวข้อย่อตัวได้หากพื้นที่ไม่พอ */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60 shrink-0">
               {icon || <FaBookOpen className="w-5 h-5 text-purple-600" />}
             </div>
-            <h3 className="font-semibold text-lg text-base-content">{title}</h3>
+            <h3 className="font-semibold text-base sm:text-lg text-base-content truncate">
+              {title}
+            </h3>
           </div>
 
+          {/* ฝั่งขวา: ใส่ shrink-0 + whitespace-nowrap ป้องกันปุ่มโดนบีบ */}
           <Link
             href={`/categories/${id}`}
-            className="text-xs sm:text-sm font-medium text-purple-600 hover:text-purple-700 bg-purple-300/10 hover:bg-purple-300 transition-colors flex items-center gap-1 border border-purple-300 dark:border-purple-800/60 rounded-full px-2 py-1"
+            className="shrink-0 whitespace-nowrap text-xs font-medium text-purple-600 hover:text-purple-700 bg-purple-300/10 hover:bg-purple-300 transition-colors flex items-center gap-1 border border-purple-300 dark:border-purple-800/60 rounded-full px-3 py-1"
           >
-            &laquo; View More
+            View More &raquo;
           </Link>
         </div>
 
@@ -109,11 +114,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
               key={idx}
               onClick={() => setCurrentPage(idx)}
               aria-label={`ไปยังหน้าที่ ${idx + 1}`}
-              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                currentPage === idx
-                  ? "w-2.5 bg-purple-600"
-                  : "w-2.5 bg-base-300 hover:bg-purple-300"
-              }`}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${currentPage === idx
+                ? "w-2.5 bg-purple-600"
+                : "w-2.5 bg-base-300 hover:bg-purple-300"
+                }`}
             />
           ))}
         </div>
@@ -123,7 +127,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
 };
 
 // --- การ์ดความคิดเห็น Sidebar ---
-const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
+const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message, articleId }) => (
   <div className="p-3 rounded-xl border border-base-200 bg-base-100 shadow-lg flex items-start gap-3">
     <div className="avatar">
       <div className="bg-base-200 text-base-content/60 rounded-full w-8 h-8 flex items-center justify-center">
@@ -139,12 +143,12 @@ const CommentItem: React.FC<CommentProps> = ({ author, timeAgo, message }) => (
       </div>
       <p className="text-base-content/80 break-words">{message}</p>
       <div className="flex justify-end mt-1">
-        <button 
-          //onClick={() => commentView(item.id)} 
+        <Link
+          href={`/articlesView/${articleId}`}
           className="btn btn-xs text-xs bg-transparent hover:bg-transparent text-violet-600 hover:text-violet-700 border border-violet-300 bg-violet-100 dark:bg-violet-900/20 dark:border-violet-800 dark:text-violet-400 dark:hover:text-violet-300"
         >
           View
-        </button>
+        </Link>
       </div>
     </div>
   </div>
@@ -170,8 +174,9 @@ export default function KMDashboard() {
           fetch(`${baseUrl}/getLatestComments`),
         ]);
 
-        const catData = await resCat.json();
-        const artData = await resArt.json();
+        // เช็กสถานะก่อนแปลงเป็น JSON เพื่อป้องกัน SyntaxError จากหน้า HTML Error
+        const catData = resCat.ok ? await resCat.json() : { Categories: [] };
+        const artData = resArt.ok ? await resArt.json() : { Articles: [] };
         const comData = resCom.ok ? await resCom.json() : [];
 
         if (isMounted) {
@@ -241,6 +246,7 @@ export default function KMDashboard() {
                   author={comment.userName || comment.author || "ผู้ใช้งานทั่วไป"}
                   timeAgo={formatTimeAgo(comment.createdAt || comment.created_at)}
                   message={comment.message}
+                  articleId={comment.articleId}
                 />
               ))
             ) : (

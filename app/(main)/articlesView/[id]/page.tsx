@@ -67,7 +67,7 @@ export default function ArticleDetailPage() {
   // State การกดไลก์ และ ความคิดเห็น
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likes, setLikes] = useState<number>(0);
-  
+
   // State คอมเมนต์
   const [comments, setComments] = useState<CommentDB[]>([]);
   const [newComment, setNewComment] = useState<string>("");
@@ -218,14 +218,10 @@ export default function ArticleDetailPage() {
       return;
     }
 
-    console.log("Comment:", newComment);
-    console.log("Article ID:", articleId);
-    console.log("User ID:", userId);
-
     try {
       setIsSubmitting(true);
 
-      const res = await fetch("/api/articles/comments", { 
+      const res = await fetch("/api/articles/comments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -517,14 +513,14 @@ export default function ArticleDetailPage() {
                         {comment.fullname || `ผู้ใช้งาน ID: ${comment.userId}`}
                       </span>
                       <span className="text-[10px] text-base-content/40">
-                        {comment.createdAt 
+                        {comment.createdAt
                           ? new Date(comment.createdAt).toLocaleString("th-TH", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "เมื่อสักครู่"}
                       </span>
                     </div>

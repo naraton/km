@@ -1,19 +1,23 @@
+"use client";
 import React from "react";
 import Link from "next/link";
 import ArticleForm from "@/app/components/Articles/AritclesForm";
+import { useRouter } from "next/navigation";
 
 export default function CreateArticlePage() {
+  const router = useRouter();
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header / Navigation */}
         <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/home"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-purple-800 transition-colors bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200"
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-purple-800 transition-colors bg-white px-4 py-2 rounded-full shadow-lg border border-slate-200 cursor-pointer"
           >
-            ← ย้อนกลับหน้าหลัก
-          </Link>
+            ← ย้อนกลับ
+          </button>
           <span className="text-sm font-bold px-3 py-1.5 transition-colors bg-white rounded-full shadow-lg border border-slate-200 text-purple-800">
             TCH KM - ARTICLE CREATOR
           </span>
@@ -31,7 +35,7 @@ export default function CreateArticlePage() {
           </div>
 
           {/* เรียกใช้งาน Component ArticleForm ตรงนี้ */}
-          <ArticleForm mode={'create'}/>
+          <ArticleForm mode={'create'} />
         </div>
       </div>
     </div>

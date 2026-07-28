@@ -1,24 +1,29 @@
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const formData = await request.formData();  // ❗ ดึง FormData
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/updateArticles`, {
+    // ส่งต่อไป Laravel แบบ FormData ไม่ต้อง set headers
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/updateArticle`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: formData,
     });
 
-    let data;
-    const text = await res.text();
+    const resultText = await res.text();
+    let result;
+
     try {
-      data = JSON.parse(text);
+      result = JSON.parse(resultText);
     } catch {
-      data = { message: text || "No JSON response" };
+      result = { message: resultText };
     }
 
-    return Response.json(data, { status: res.status });
+    return Response.json(result, { status: res.status });
+
   } catch (error) {
-    console.error("Add record error:", error);
-    return Response.json({ error: "Failed to add record" }, { status: 500 });
+    console.error("Upload error:", error);
+    return Response.json(
+      { error: "Failed to upload" },
+      { status: 500 }
+    );
   }
 }

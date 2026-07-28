@@ -106,7 +106,7 @@ function AiFillSettings({
 
               <li>
                 <Link
-                  href="#"
+                  href="/my-articles"
                   className="flex items-center gap-2 py-2 w-full text-left"
                 >
                   <FaBook className="w-4 h-4 text-blue-500" />
@@ -402,13 +402,25 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
     passSuccess,
   };
 
+  //ค้นหาบทความ
+  const [searchTerm, setSearchTerm] = useState("");
+  const handleSearch = (e: React.FormEvent | React.KeyboardEvent) => {
+    if ('key' in e && e.key !== 'Enter') return;
+    e.preventDefault();
+
+    if (searchTerm.trim()) {
+      // นำทางไปหน้า /search พร้อม query string
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
   return (
     <div className="drawer lg:drawer-open bg-slate-50/50">
       <input id="my-drawer" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content flex flex-col min-h-screen bg-white/20">
         <header
           className="navbar fixed top-0 left-0 w-full z-40 bg-white/85 backdrop-blur-xl border-b border-gray-200/60 transition-all duration-300"
-          style={{ boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)" }}
+          style={{ boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)" }}
         >
           {/* ✅ Mobile Header */}
           <div className="flex items-center justify-between z-15 lg:hidden w-full gap-1">
@@ -439,6 +451,9 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
               <div className="relative flex-1">
                 <input
                   type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch(e)}
                   placeholder="ค้นหา..."
                   className="w-full pl-9 pr-4 py-2 text-sm bg-slate-100/80 border border-slate-200 rounded-full focus:outline-none focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-slate-700 placeholder:text-slate-400 transition-all duration-200"
                 />
@@ -478,6 +493,9 @@ export default function LayoutDrawer({ children }: { children: React.ReactNode }
               <div className="relative w-72">
                 <input
                   type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch(e)}
                   placeholder="ค้นหาองค์ความรู้, บทความ..."
                   className="w-full pl-9 pr-4 py-2 text-sm bg-slate-100/80 border border-slate-200 rounded-full focus:outline-none focus:bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-700 placeholder:text-slate-400 transition-all duration-200"
                 />
