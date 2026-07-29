@@ -11,49 +11,45 @@ export default function AuthWrapper({
   requireAuth?: boolean;
 }) {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     const token = localStorage.getItem("token");
     const expiresAt = localStorage.getItem("expiresAt");
-    const hasToken = !!token;
+    const now = Date.now();
 
-    // ถ้ายังไม่ login
-    if (requireAuth && !hasToken) {
-      router.push("/");
-      return;
-    }
+    // 1. ตรวจสอบว่า Token หมดอายุแล้วหรือยัง
+    const isExpired = expiresAt ? now > parseInt(expiresAt, 10) : false;
 
-    // ถ้ามี token แต่หมดอายุแล้ว
-    if (expiresAt && Date.now() > parseInt(expiresAt, 10)) {
+    if (isExpired) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("expiresAt");
-      //alert('Session หมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่อีกครั้ง');
-      router.push("/");
-
-      return;
     }
 
-    // ถ้าอยู่หน้า login แต่มี token
-    if (!requireAuth && hasToken) {
-      router.push("/home");
-      return;
-    }
+    const hasValidToken = !!token && !isExpired;
 
-    // (optional) แสดงเวลาที่เหลือ
-    if (expiresAt) {
-      const remaining = (parseInt(expiresAt, 10) - Date.now()) / 3600000;
-      //console.log(`⏰ Token จะหมดอายุในอีก ${remaining.toFixed(2)} ชั่วโมง`);
+    // 2. เช็คเงื่อนไข Auth & Redirect
+    if (requireAuth && !hasValidToken) {
+      // ต้องการ Auth แต่ไม่มี Token/หมดอายุ -> ไปหน้า Login
+      router.replace("/");
+    } else if (!requireAuth && hasValidToken) {
+      // อยู่หน้า Login แต่ล็อกอินอยู่แล้ว -> ไปหน้า Home
+      router.replace("/home");
+    } else {
+      // สถานะถูกต้อง อนุญาตให้แสดงผล children ได้
+      setIsAuthenticated(true);
     }
   }, [requireAuth, router]);
 
-  if (!mounted) {
+  // แสดง Loading Screen จนกว่าจะตรวจสอบ Auth เสร็จสิ้น (ยับยั้งการเห็นหน้าเว็บก่อนย้ายหน้า)
+  if (isAuthenticated === null) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
-        <p className="text-gray-600 text-lg ms-2"> Loading...</p>
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+          <p className="text-slate-600 text-base font-medium">กำลังตรวจสอบสิทธิ์...</p>
+        </div>
       </div>
     );
   }
