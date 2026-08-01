@@ -106,8 +106,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
           </div>
         )}
 
-        <div className="flex justify-center items-center gap-2 mt-4 pt-1">
-          {Array.from({ length: totalPages }).map((_, idx) => (
+        {/* 🟢 จุดไข่ปลา Pagination สำหรับคลิกเปลี่ยนหน้า */}
+        {totalPages > 2 && (
+          <div className="flex justify-center items-center gap-2 mt-4 pt-1">
+            {Array.from({ length: totalPages }).map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentPage(idx)}
@@ -118,8 +120,9 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
                   : "w-2.5 bg-base-300 hover:bg-purple-300"
               }`}
             />
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -172,7 +175,7 @@ const TopArticlesSection: React.FC<{ items: Article[] }> = ({ items }) => {
       )}
 
       {/* 🟢 จุดไข่ปลา Pagination สำหรับคลิกเปลี่ยนหน้า */}
-      {totalPages > 1 && (
+      {totalPages > 3 && (
         <div className="flex justify-center items-center gap-2 mt-2 pt-1">
           {Array.from({ length: totalPages }).map((_, idx) => (
             <button
