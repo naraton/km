@@ -316,8 +316,8 @@ export default function KMDashboard() {
         {/* ========================================== */}
         {/* ฝั่งขวา: Sidebar ความคิดเห็นล่าสุด (1 Column) */}
         {/* ========================================== */}
-        <div className="lg:col-span-1 flex flex-col gap-4">
-          <h3 className="font-semibold text-lg text-base-content px-1">
+        <div className="lg:col-span-1 flex flex-col gap-2">
+          <h3 className="font-semibold text-lg text-base-content">
             ความคิดเห็นล่าสุด
           </h3>
           <div className="flex flex-col gap-2.5">
