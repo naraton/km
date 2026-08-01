@@ -68,7 +68,6 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
     <div className="flex flex-col gap-3">
       <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-4 bg-base-100/50 shadow-lg flex flex-col justify-between min-h-[220px]">
         <div className="flex items-center justify-between gap-2">
-          {/* ฝั่งซ้าย: ใส่ min-w-0 เพื่อให้หัวข้อย่อตัวได้หากพื้นที่ไม่พอ */}
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800/60 shrink-0">
               {icon || <FaBookOpen className="w-5 h-5 text-purple-600" />}
@@ -78,7 +77,6 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
             </h3>
           </div>
 
-          {/* ฝั่งขวา: ใส่ shrink-0 + whitespace-nowrap ป้องกันปุ่มโดนบีบ */}
           <Link
             href={`/categories/${id}`}
             className="shrink-0 whitespace-nowrap text-xs font-medium text-purple-600 hover:text-purple-700 bg-purple-300/10 hover:bg-purple-300 transition-colors flex items-center gap-1 border border-purple-300 dark:border-purple-800/60 rounded-full px-3 py-1"
@@ -114,14 +112,82 @@ const CategorySection: React.FC<CategorySectionProps> = ({ id, title, icon, item
               key={idx}
               onClick={() => setCurrentPage(idx)}
               aria-label={`ไปยังหน้าที่ ${idx + 1}`}
-              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${currentPage === idx
-                ? "w-2.5 bg-purple-600"
-                : "w-2.5 bg-base-300 hover:bg-purple-300"
-                }`}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                currentPage === idx
+                  ? "w-2.5 bg-purple-600"
+                  : "w-2.5 bg-base-300 hover:bg-purple-300"
+              }`}
             />
           ))}
         </div>
       </div>
+    </div>
+  );
+};
+
+// --- Component บทความยอดนิยม พร้อม Pagination จุดไข่ปลา ---
+const TopArticlesSection: React.FC<{ items: Article[] }> = ({ items }) => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 3; // แสดงหน้าละ 3 บทความ (ปรับเปลี่ยนจำนวนตรงนี้ได้)
+
+  const totalPages = Math.ceil(items.length / itemsPerPage) || 1;
+
+  const displayedItems = items.slice(
+    currentPage * itemsPerPage,
+    (currentPage + 1) * itemsPerPage
+  );
+
+  return (
+    <div className="border border-purple-300 dark:border-purple-800/60 rounded-2xl p-5 bg-base-100/50 shadow-lg flex flex-col justify-between gap-4">
+      <div className="flex items-center justify-between border-b border-purple-100 dark:border-purple-900/40 pb-3">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-lg text-base-content flex items-center">
+            <span className="me-1 bg-orange-500 text-sm text-white px-2.5 py-0.5 rounded-full border border-orange-600">
+              10
+            </span>
+            บทความยอดนิยม (ยอดเข้าชมสูงสุด)
+          </h3>
+        </div>
+      </div>
+
+      {items.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {displayedItems.map((item, index) => (
+            <Link
+              href={`/articlesView/${item.id}`}
+              key={item.id}
+              className="block h-full"
+            >
+              <ArticleCard
+                key={item.id ?? `top-${currentPage}-${index}`}
+                article={item}
+              />
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-32 text-xs text-base-content/40 italic">
+          ยังไม่มีบทความแนะนำ
+        </div>
+      )}
+
+      {/* 🟢 จุดไข่ปลา Pagination สำหรับคลิกเปลี่ยนหน้า */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-2 pt-1">
+          {Array.from({ length: totalPages }).map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentPage(idx)}
+              aria-label={`ไปยังบทความยอดนิยมหน้าที่ ${idx + 1}`}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                currentPage === idx
+                  ? "w-2.5 bg-purple-600"
+                  : "w-2.5 bg-base-300 hover:bg-purple-300"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -160,6 +226,7 @@ export default function KMDashboard() {
   const [articles, setArticles] = useState<any[]>([]);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [topArticles, setTopArticles] = useState<any[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -168,21 +235,23 @@ export default function KMDashboard() {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
-        const [resCat, resArt, resCom] = await Promise.all([
+        const [resCat, resArt, resCom, resTop] = await Promise.all([
           fetch(`${baseUrl}/getCategories`),
           fetch(`${baseUrl}/getArticles`),
           fetch(`${baseUrl}/getLatestComments`),
+          fetch(`${baseUrl}/getTopArticles`),
         ]);
 
-        // เช็กสถานะก่อนแปลงเป็น JSON เพื่อป้องกัน SyntaxError จากหน้า HTML Error
         const catData = resCat.ok ? await resCat.json() : { Categories: [] };
         const artData = resArt.ok ? await resArt.json() : { Articles: [] };
         const comData = resCom.ok ? await resCom.json() : [];
+        const topData = resTop.ok ? await resTop.json() : { topArticles: [], Articles: [] };
 
         if (isMounted) {
           setCategories(catData.Categories || []);
           setArticles(artData.Articles || []);
           setComments(comData.Comments || comData || []);
+          setTopArticles(topData.topArticles || topData.Articles || []);
         }
       } catch (err) {
         console.error("Fetch data error:", err);
@@ -212,28 +281,38 @@ export default function KMDashboard() {
   return (
     <div className="w-full min-h-screen py-4">
       <div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-6 px-2 sm:px-4">
-        {/* หมวดหมู่หลัก */}
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {categories.map((category) => {
-            const matchedArticles = articles.filter(
-              (art) =>
-                String(art.categoryId) === String(category.id) &&
-                Number(art.isPublished) === 1
-            );
+        {/* ========================================== */}
+        {/* ฝั่งซ้าย (3 Columns) */}
+        {/* ========================================== */}
+        <div className="lg:col-span-3 flex flex-col gap-6">
+          {/* 1. หมวดหมู่หลัก (แสดงแบบ Grid 2 คอลัมน์) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {categories.map((category) => {
+              const matchedArticles = articles.filter(
+                (art) =>
+                  String(art.categoryId) === String(category.id) &&
+                  Number(art.isPublished) === 1
+              );
 
-            return (
-              <CategorySection
-                id={category.id}
-                key={category.id}
-                title={category.name}
-                icon={iconMap[category.icon]}
-                items={matchedArticles}
-              />
-            );
-          })}
+              return (
+                <CategorySection
+                  id={category.id}
+                  key={category.id}
+                  title={category.name}
+                  icon={iconMap[category.icon]}
+                  items={matchedArticles}
+                />
+              );
+            })}
+          </div>
+
+          {/* 🔴 2. ส่วนบทความยอดนิยม (มีจุดไข่ปลาให้คลิกสลับหน้า) */}
+          <TopArticlesSection items={topArticles} />
         </div>
 
-        {/* ความคิดเห็นล่าสุด */}
+        {/* ========================================== */}
+        {/* ฝั่งขวา: Sidebar ความคิดเห็นล่าสุด (1 Column) */}
+        {/* ========================================== */}
         <div className="lg:col-span-1 flex flex-col gap-4">
           <h3 className="font-semibold text-lg text-base-content px-1">
             ความคิดเห็นล่าสุด

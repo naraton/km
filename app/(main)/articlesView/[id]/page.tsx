@@ -19,6 +19,13 @@ import {
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 
+// Lightbox
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
+import "yet-another-react-lightbox/plugins/thumbnails.css";
+
 // --- Interfaces ---
 export interface ArticleDB {
   id: number;
@@ -72,6 +79,10 @@ export default function ArticleDetailPage() {
   const [comments, setComments] = useState<CommentDB[]>([]);
   const [newComment, setNewComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+   // State สำหรับLightbox
+  const [open, setOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const coverBaseUrl = process.env.NEXT_PUBLIC_coverImage;
   const pdfBaseUrl = process.env.NEXT_PUBLIC_pdfContent || "";
@@ -317,6 +328,15 @@ export default function ArticleDetailPage() {
   const imageSrc = article.coverImage ? `${coverBaseUrl}/${article.coverImage}` : defaultImage;
   const tagsList = article.tag ? article.tag.split(",").map((t) => t.trim()) : [];
 
+  // สร้าง Array รูปภาพสำหรับ Lightbox
+  const images = article.coverImage ? [`${coverBaseUrl}/${article.coverImage}`] : [];
+
+  // ฟังก์ชันเปิด Lightbox (ส่ง index รูปที่ต้องการเปิด)
+  const handleOpenLightbox = (index: number) => {
+    setCurrentIndex(index);
+    setOpen(true);
+  };
+
   return (
     <div className="w-full min-h-screen py-6 px-2 sm:px-6 max-w-7xl mx-auto space-y-6">
       {/* 1. Header & Breadcrumb */}
@@ -369,7 +389,10 @@ export default function ArticleDetailPage() {
             </div>
 
             {/* รูปปกบทความ */}
-            <div className="w-full h-64 sm:h-96 rounded-xl overflow-hidden bg-base-300 relative">
+            <div
+              className="w-full h-64 sm:h-96 rounded-xl overflow-hidden bg-base-300 relative cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handleOpenLightbox(0)} // เมื่อคลิก ให้เปิดรูปแรก (Index 0)
+            >
               <img
                 src={imageSrc}
                 alt={article.title}
@@ -378,6 +401,14 @@ export default function ArticleDetailPage() {
                   const target = e.currentTarget;
                   if (target.src !== defaultImage) target.src = defaultImage;
                 }}
+              />
+              
+              <Lightbox
+                open={open}
+                close={() => setOpen(false)}
+                index={currentIndex}
+                slides={images.map((src) => ({ src }))}
+                plugins={[Zoom, Thumbnails]}
               />
             </div>
 
